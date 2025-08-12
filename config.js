@@ -58,7 +58,7 @@ global.packname = '𝐂𝐡𝐚𝐭𝐔𝐧𝐢𝐭𝐲-𝐁𝐨𝐭'
 global.author = '𝐌𝐝'
 
 
-global.vs = '6.0'
+global.vs = '7.0'
 
 global.nomebot = '𝐂𝐡𝐚𝐭𝐔𝐧𝐢𝐭𝐲-𝐁𝐨𝐭'
 
