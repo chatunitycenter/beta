@@ -13,7 +13,7 @@ const handler = async (message, { conn, usedPrefix, command }) => {
 
     const menuText = generateMenuText(usedPrefix, botName, userCount);
 
-    const imagePath = path.join(__dirname, '../menu/luffy.jpeg'); 
+    const imagePath = path.join(__dirname, '../menu/e2b79921-db17-486e-ad95-84ce4eb22514.jpeg'); 
     await conn.sendMessage(
         message.chat,
         {
