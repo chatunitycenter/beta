@@ -1,3 +1,4 @@
+
 const MIN_MEMBERS = 30;
 
 let handler = async (m, { conn, args }) => {
@@ -20,28 +21,24 @@ let handler = async (m, { conn, args }) => {
     let membri = res.size || 0;
 
     if (res.joinApprovalRequired) {
-      return m.reply(
-        `ℹ️ Il gruppo *${nome}* richiede approvazione per entrare.\n👥 Membri stimati: ${membri}\n\n${
-          membri >= MIN_MEMBERS
-            ? `✅ Ha almeno ${MIN_MEMBERS} membri, puoi mandare la richiesta.`
-            : `❌ Non ha almeno ${MIN_MEMBERS} membri, non conviene unirsi.`
-        }`
-      );
+      if (membri >= MIN_MEMBERS) {
+        await conn.groupAcceptInvite(code);
+        return m.reply(`📩 Richiesta inviata al gruppo *${nome}* (${membri} membri).`);
+      } else {
+        return m.reply(`❌ Il gruppo *${nome}* ha solo ${membri} membri (minimo richiesto: ${MIN_MEMBERS}).`);
+      }
     }
 
-    if (membri < MIN_MEMBERS) {
-      return m.reply(
-        `❌ Il gruppo *${nome}* ha solo ${membri} membri, servono almeno ${MIN_MEMBERS}.`
-      );
+    if (membri >= MIN_MEMBERS) {
+      await conn.groupAcceptInvite(code);
+      return m.reply(`✅ Il bot è entrato nel gruppo *${nome}* (${membri} membri).`);
+    } else {
+      return m.reply(`❌ Il gruppo *${nome}* ha solo ${membri} membri (minimo richiesto: ${MIN_MEMBERS}).`);
     }
-
-    return m.reply(
-      `✅ Il gruppo *${nome}* ha ${membri} membri.\n👉 Puoi unirti senza problemi.`
-    );
 
   } catch (e) {
     console.error(e);
-    m.reply(`⚠️ Errore durante la verifica del link: ${e.message || e}`);
+    m.reply(`⚠️ Errore durante il join: ${e.message || e}`);
   }
 };
 
