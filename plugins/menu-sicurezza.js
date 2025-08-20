@@ -79,7 +79,7 @@ ${statusList.split('\n').map(line => `┃◈┃• ${line}`).join('\n')}
 `.trim();
 
   // Percorso dell'immagine
-  const imagePath = path.join(__dirname, '../menu/onepiece4.jpeg');
+  const imagePath = path.join(__dirname, '../menu/sicurezza.jpeg');
 
   // Invia il menu con l'immagine e i bottoni
   await conn.sendMessage(m.chat, {
