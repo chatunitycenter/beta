@@ -1,10 +1,11 @@
 import { createCanvas } from 'canvas';
 
-const SLOT_WIDTH = 400;
-const SLOT_HEIGHT = 300;
-const REEL_WIDTH = 80;
-const SYMBOL_SIZE = 70;
-const SYMBOL_SPACING = 10;
+const SLOT_WIDTH = 500;
+const SLOT_HEIGHT = 350;
+const REEL_WIDTH = 90;
+const SYMBOL_SIZE = 80;
+const SYMBOL_SPACING = 15;
+const FRAMES = 10; // Numero di frame per l'animazione
 
 class SlotMachine {
     constructor(userId, userData) {
@@ -16,33 +17,35 @@ class SlotMachine {
         this.betAmount = 0;
         this.winAmount = 0;
         this.symbols = this.createSymbols();
+        this.currentFrame = 0;
+        this.animationFrames = [];
         this.initializeReels();
     }
 
     createSymbols() {
         return [
-            { emoji: '🍒', name: 'Cherry', value: 2, color: '#FF0000' },
-            { emoji: '🍋', name: 'Lemon', value: 3, color: '#FFD700' },
-            { emoji: '🍊', name: 'Orange', value: 4, color: '#FFA500' },
-            { emoji: '💎', name: 'Diamond', value: 10, color: '#1E90FF' },
-            { emoji: '7️⃣', name: 'Seven', value: 7, color: '#00FF00' },
-            { emoji: '⭐', name: 'Star', value: 5, color: '#FFFF00' },
-            { emoji: '🔔', name: 'Bell', value: 6, color: '#FF69B4' },
-            { emoji: '🎰', name: 'Slot', value: 8, color: '#8A2BE2' }
+            { emoji: '🍒', name: 'Cherry', value: 2, color: '#FF6B6B', bgColor: '#FFE2E2' },
+            { emoji: '🍋', name: 'Lemon', value: 3, color: '#FFD93D', bgColor: '#FFF6BF' },
+            { emoji: '🍊', name: 'Orange', value: 4, color: '#FF9F45', bgColor: '#FFE8D4' },
+            { emoji: '💎', name: 'Diamond', value: 10, color: '#6BCB77', bgColor: '#D4F4DD' },
+            { emoji: '7️⃣', name: 'Seven', value: 7, color: '#4D96FF', bgColor: '#D6E4FF' },
+            { emoji: '⭐', name: 'Star', value: 5, color: '#FFE569', bgColor: '#FFF9D7' },
+            { emoji: '🔔', name: 'Bell', value: 6, color: '#FF78C4', bgColor: '#FFE4F3' },
+            { emoji: '🎰', name: 'Slot', value: 8, color: '#9B5DE5', bgColor: '#E6D7F2' }
         ];
     }
 
     initializeReels() {
         for (let i = 0; i < 3; i++) {
             this.reels[i] = [];
-            for (let j = 0; j < 20; j++) { // Reel più lungo per effetto di scorrimento
+            for (let j = 0; j < 30; j++) {
                 const randomSymbol = this.symbols[Math.floor(Math.random() * this.symbols.length)];
                 this.reels[i].push(randomSymbol);
             }
         }
     }
 
-    spin(betAmount) {
+    async spin(betAmount) {
         if (this.spinning) return { error: "🎰 Le slot sono già in movimento!" };
         if (betAmount > this.userData.limit) return { error: "💰 Fondi insufficienti!" };
 
@@ -51,42 +54,58 @@ class SlotMachine {
         this.spinning = true;
         this.result = null;
         this.winAmount = 0;
+        this.currentFrame = 0;
+        this.animationFrames = [];
 
-        // Mescola i rulli
-        for (let i = 0; i < 3; i++) {
-            this.initializeReels();
+        // Genera i frame dell'animazione
+        await this.generateAnimationFrames();
+
+        return { success: true, spinning: true, frames: this.animationFrames.length };
+    }
+
+    async generateAnimationFrames() {
+        this.animationFrames = [];
+        
+        for (let frame = 0; frame < FRAMES; frame++) {
+            // Sposta i rulli per ogni frame
+            for (let i = 0; i < 3; i++) {
+                // Rimuovi il primo elemento e aggiungine uno nuovo alla fine
+                this.reels[i].shift();
+                const newSymbol = this.symbols[Math.floor(Math.random() * this.symbols.length)];
+                this.reels[i].push(newSymbol);
+            }
+
+            const frameImage = await this.generateFrameImage(frame);
+            this.animationFrames.push(frameImage);
         }
 
-        // Simula lo spinning e determina il risultato
-        setTimeout(() => {
-            this.determineResult();
-        }, 2000);
-
-        return { success: true, spinning: true };
+        // Genera il frame finale con il risultato
+        this.determineResult();
+        const finalFrame = await this.generateFrameImage(FRAMES, true);
+        this.animationFrames.push(finalFrame);
     }
 
     determineResult() {
         this.spinning = false;
         
-        // Prendi i simboli centrali di ogni rullo
         const resultSymbols = [
-            this.reels[0][10], // Simbolo centrale del primo rullo
+            this.reels[0][10],
             this.reels[1][10],
             this.reels[2][10]
         ];
 
-        // Controlla le vincite
         let winMultiplier = 0;
         let winType = 'nessuna';
 
-        // Jackpot - tutti e 3 uguali
         if (resultSymbols[0] === resultSymbols[1] && resultSymbols[1] === resultSymbols[2]) {
             winMultiplier = resultSymbols[0].value * 5;
             winType = 'JACKPOT';
         }
-        // Doppia combinazione
         else if (resultSymbols[0] === resultSymbols[1] || resultSymbols[1] === resultSymbols[2] || resultSymbols[0] === resultSymbols[2]) {
-            winMultiplier = resultSymbols.find(s => resultSymbols.filter(x => x === s).length >= 2).value * 2;
+            const winningSymbol = resultSymbols.find(s => 
+                resultSymbols.filter(x => x === s).length >= 2
+            );
+            winMultiplier = winningSymbol.value * 2;
             winType = 'doppia';
         }
 
@@ -94,122 +113,180 @@ class SlotMachine {
         
         if (winMultiplier > 0) {
             this.userData.limit += this.winAmount;
-            this.result = { win: true, amount: this.winAmount, type: winType, symbols: resultSymbols };
+            this.result = { 
+                win: true, 
+                amount: this.winAmount, 
+                type: winType, 
+                symbols: resultSymbols,
+                multiplier: winMultiplier
+            };
         } else {
-            this.result = { win: false, symbols: resultSymbols };
+            this.result = { 
+                win: false, 
+                symbols: resultSymbols 
+            };
         }
     }
 
-    async generateSlotImage() {
+    async generateFrameImage(frameNumber, isFinal = false) {
         const canvas = createCanvas(SLOT_WIDTH, SLOT_HEIGHT);
         const ctx = canvas.getContext('2d');
 
-        // Sfondo macchinetta
+        // Sfondo macchinetta con gradiente
         const gradient = ctx.createLinearGradient(0, 0, SLOT_WIDTH, SLOT_HEIGHT);
         gradient.addColorStop(0, '#2c3e50');
-        gradient.addColorStop(1, '#34495e');
+        gradient.addColorStop(0.5, '#34495e');
+        gradient.addColorStop(1, '#2c3e50');
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, SLOT_WIDTH, SLOT_HEIGHT);
 
-        // Cornice metallica
+        // Cornice metallica con effetto 3D
+        ctx.strokeStyle = '#ecf0f1';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(15, 15, SLOT_WIDTH - 30, SLOT_HEIGHT - 30);
+        
         ctx.strokeStyle = '#bdc3c7';
         ctx.lineWidth = 8;
         ctx.strokeRect(10, 10, SLOT_WIDTH - 20, SLOT_HEIGHT - 20);
 
-        // Luci decorative
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-        for (let i = 0; i < 20; i++) {
+        // Luci LED decorative
+        ctx.fillStyle = frameNumber % 2 === 0 ? '#e74c3c' : '#f39c12';
+        for (let i = 0; i < 24; i++) {
             ctx.beginPath();
-            ctx.arc(20 + i * 20, 20, 3, 0, Math.PI * 2);
+            ctx.arc(25 + i * 20, 25, 4, 0, Math.PI * 2);
             ctx.fill();
             ctx.beginPath();
-            ctx.arc(20 + i * 20, SLOT_HEIGHT - 20, 3, 0, Math.PI * 2);
+            ctx.arc(25 + i * 20, SLOT_HEIGHT - 25, 4, 0, Math.PI * 2);
             ctx.fill();
         }
 
-        // Area rulli
-        ctx.fillStyle = '#2c3e50';
-        ctx.fillRect(50, 50, SLOT_WIDTH - 100, SLOT_HEIGHT - 100);
+        // Area rulli con effetto vetro
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        ctx.fillRect(60, 60, SLOT_WIDTH - 120, SLOT_HEIGHT - 120);
+
+        // Riflessi vetro
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.beginPath();
+        ctx.moveTo(60, 60);
+        ctx.lineTo(120, 60);
+        ctx.lineTo(60, 120);
+        ctx.fill();
 
         // Disegna i rulli
-        const reelStartX = 60;
-        const reelStartY = 60;
+        const reelStartX = 80;
+        const reelStartY = 80;
         
         for (let i = 0; i < 3; i++) {
-            this.drawReel(ctx, reelStartX + i * (REEL_WIDTH + 20), reelStartY, i);
+            this.drawReel(ctx, reelStartX + i * (REEL_WIDTH + 30), reelStartY, i, frameNumber);
         }
 
         // Linee vincenti
-        ctx.strokeStyle = 'rgba(255, 215, 0, 0.3)';
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = isFinal && this.result.win ? '#f39c12' : 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = isFinal && this.result.win ? 3 : 2;
+        ctx.setLineDash(isFinal && this.result.win ? [] : [5, 5]);
         
-        // Linea orizzontale centrale
-        ctx.beginPath();
-        ctx.moveTo(50, reelStartY + SYMBOL_SIZE + SYMBOL_SPACING);
-        ctx.lineTo(SLOT_WIDTH - 50, reelStartY + SYMBOL_SIZE + SYMBOL_SPACING);
-        ctx.stroke();
+        // Linee orizzontali
+        for (let i = 0; i < 3; i++) {
+            const lineY = reelStartY + (i * (SYMBOL_SIZE + SYMBOL_SPACING)) + SYMBOL_SIZE / 2;
+            ctx.beginPath();
+            ctx.moveTo(60, lineY);
+            ctx.lineTo(SLOT_WIDTH - 60, lineY);
+            ctx.stroke();
+        }
 
-        // Info gioco
+        ctx.setLineDash([]);
+
+        // Header con animazione
         ctx.fillStyle = '#ecf0f1';
-        ctx.font = 'bold 16px Arial';
+        ctx.font = 'bold 20px Arial';
         ctx.textAlign = 'center';
         
-        if (this.spinning) {
-            ctx.fillText('🎰 SPINNING...', SLOT_WIDTH / 2, 40);
-        } else if (this.result) {
+        if (!isFinal) {
+            const spinText = '🎰 SPINNING' + '.'.repeat(frameNumber % 4);
+            ctx.fillText(spinText, SLOT_WIDTH / 2, 40);
+        } else {
             if (this.result.win) {
                 ctx.fillStyle = '#f39c12';
-                ctx.font = 'bold 20px Arial';
-                ctx.fillText(`🎉 ${this.result.type}! VINTO: ${this.formatNumber(this.result.amount)} UC`, SLOT_WIDTH / 2, 40);
+                ctx.font = 'bold 24px Arial';
+                ctx.fillText(`🎉 ${this.result.type.toUpperCase()}!`, SLOT_WIDTH / 2, 40);
             } else {
                 ctx.fillStyle = '#e74c3c';
-                ctx.fillText('😔 Ritenta!', SLOT_WIDTH / 2, 40);
+                ctx.fillText('🎯 RITENTA!', SLOT_WIDTH / 2, 40);
             }
         }
 
-        // Puntata e saldo
+        // Footer con info
         ctx.fillStyle = '#bdc3c7';
         ctx.font = '14px Arial';
-        ctx.fillText(`PUNTATA: ${this.formatNumber(this.betAmount)} UC`, SLOT_WIDTH / 2, SLOT_HEIGHT - 25);
-        ctx.fillText(`SALDO: ${this.formatNumber(this.userData.limit)} UC`, SLOT_WIDTH / 2, SLOT_HEIGHT - 10);
+        ctx.fillText(`💶 PUNTATA: ${this.formatNumber(this.betAmount)} UC`, SLOT_WIDTH / 4, SLOT_HEIGHT - 20);
+        ctx.fillText(`💰 SALDO: ${this.formatNumber(this.userData.limit)} UC`, SLOT_WIDTH * 3/4, SLOT_HEIGHT - 20);
+
+        // Messaggio di vincita nel frame finale
+        if (isFinal && this.result.win) {
+            ctx.fillStyle = '#27ae60';
+            ctx.font = 'bold 18px Arial';
+            ctx.fillText(`+${this.formatNumber(this.winAmount)} UC (x${this.result.multiplier})`, SLOT_WIDTH / 2, SLOT_HEIGHT - 40);
+        }
 
         return canvas.toBuffer('image/png');
     }
 
-    drawReel(ctx, x, y, reelIndex) {
-        // Sfondo rullo
-        ctx.fillStyle = '#1a1a1a';
+    drawReel(ctx, x, y, reelIndex, frameNumber) {
+        // Sfondo rullo con effetto profondità
+        const reelGradient = ctx.createLinearGradient(x, y, x + REEL_WIDTH, y + SYMBOL_SIZE * 3);
+        reelGradient.addColorStop(0, '#2d3436');
+        reelGradient.addColorStop(1, '#1a1a1a');
+        ctx.fillStyle = reelGradient;
         ctx.fillRect(x, y, REEL_WIDTH, SYMBOL_SIZE * 3 + SYMBOL_SPACING * 2);
 
-        // Simboli del rullo
-        const visibleSymbols = this.reels[reelIndex].slice(10, 13); // Mostra 3 simboli centrali
+        // Simboli visibili (3 centrali)
+        const startIndex = 10 + (frameNumber % 3); // Animazione dello scorrimento
+        const visibleSymbols = this.reels[reelIndex].slice(startIndex, startIndex + 3);
 
         for (let i = 0; i < 3; i++) {
             const symbol = visibleSymbols[i];
+            if (!symbol) continue;
+
             const symbolY = y + i * (SYMBOL_SIZE + SYMBOL_SPACING);
             
-            // Sfondo simbolo
-            ctx.fillStyle = '#2c3e50';
-            ctx.fillRect(x + 5, symbolY + 5, REEL_WIDTH - 10, SYMBOL_SIZE - 10);
+            // Sfondo simbolo con effetto 3D
+            ctx.fillStyle = symbol.bgColor;
+            ctx.beginPath();
+            ctx.roundRect(x + 5, symbolY + 5, REEL_WIDTH - 10, SYMBOL_SIZE - 10, 10);
+            ctx.fill();
 
-            // Simbolo
-            ctx.font = 'bold 40px Arial';
+            // Bordo simbolo
+            ctx.strokeStyle = symbol.color;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Simbolo emoji
+            ctx.font = 'bold 50px Segoe UI Emoji, Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillStyle = symbol.color;
             ctx.fillText(symbol.emoji, x + REEL_WIDTH / 2, symbolY + SYMBOL_SIZE / 2);
 
-            // Effetto luci
+            // Effetto highlight per simboli vincenti
             if (this.result && this.result.win && this.result.symbols.includes(symbol)) {
                 ctx.strokeStyle = '#f39c12';
                 ctx.lineWidth = 3;
-                ctx.strokeRect(x + 3, symbolY + 3, REEL_WIDTH - 6, SYMBOL_SIZE - 6);
+                ctx.beginPath();
+                ctx.roundRect(x + 2, symbolY + 2, REEL_WIDTH - 4, SYMBOL_SIZE - 4, 8);
+                ctx.stroke();
+
+                // Effetto glow
+                ctx.shadowColor = '#f39c12';
+                ctx.shadowBlur = 15;
+                ctx.fillStyle = 'rgba(243, 156, 18, 0.1)';
+                ctx.fill();
+                ctx.shadowBlur = 0;
             }
         }
 
         // Cornice rullo
-        ctx.strokeStyle = '#7f8c8d';
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#636e72';
+        ctx.lineWidth = 3;
         ctx.strokeRect(x, y, REEL_WIDTH, SYMBOL_SIZE * 3 + SYMBOL_SPACING * 2);
     }
 
@@ -219,7 +296,6 @@ class SlotMachine {
 }
 
 global.slotMachines = global.slotMachines || {};
-
 let cooldowns = {};
 
 let handler = async (m, { conn, usedPrefix, text }) => {
@@ -229,7 +305,6 @@ let handler = async (m, { conn, usedPrefix, text }) => {
 
     if (!user) return conn.reply(m.chat, '❌ Utente non trovato nel database!', m);
 
-    // Cooldown di 3 secondi tra le spin
     if (cooldowns[userId] && Date.now() - cooldowns[userId] < 3000) {
         const remaining = Math.ceil((cooldowns[userId] + 3000 - Date.now()) / 1000);
         return conn.reply(m.chat, `⏰ Aspetta ${remaining} secondi prima di giocare di nuovo!`, m);
@@ -242,60 +317,60 @@ let handler = async (m, { conn, usedPrefix, text }) => {
         return conn.reply(m.chat, `❌ Puntata non valida! Inserisci un importo tra 10 e ${user.limit} UC`, m);
     }
 
-    // Crea o recupera la slot machine
     if (!global.slotMachines[userId]) {
         global.slotMachines[userId] = new SlotMachine(userId, user);
     }
 
     const slotMachine = global.slotMachines[userId];
-    const result = slotMachine.spin(betAmount);
+    const result = await slotMachine.spin(betAmount);
 
     if (result.error) return conn.reply(m.chat, result.error, m);
 
-    // Genera l'immagine iniziale (spinning)
-    const spinningImage = await slotMachine.generateSlotImage();
-    
-    let initialCaption = `🎰 *SLOT MACHINE*\n`;
-    initialCaption += `💶 Puntata: ${slotMachine.formatNumber(betAmount)} UC\n`;
-    initialCaption += `📊 Saldo: ${slotMachine.formatNumber(user.limit)} UC\n\n`;
-    initialCaption += `⏳ Le slot stanno girando...`;
-
-    await conn.sendMessage(chat, {
-        image: spinningImage,
-        caption: initialCaption,
-        footer: 'Slot Machine 🎰'
-    }, { quoted: m });
-
-    // Aspetta 2 secondi per l'effetto di spinning
-    setTimeout(async () => {
-        const finalImage = await slotMachine.generateSlotImage();
-        let finalCaption = `🎰 *SLOT MACHINE*\n`;
-        finalCaption += `💶 Puntata: ${slotMachine.formatNumber(betAmount)} UC\n`;
-        finalCaption += `📊 Saldo: ${slotMachine.formatNumber(user.limit)} UC\n\n`;
-
-        if (slotMachine.result.win) {
-            finalCaption += `🎉 *${slotMachine.result.type}!*\n`;
-            finalCaption += `💰 Vincita: ${slotMachine.formatNumber(slotMachine.result.amount)} UC\n`;
-            finalCaption += `✨ Combinazione: ${slotMachine.result.symbols.map(s => s.emoji).join(' ')}`;
+    // Invia i frame dell'animazione
+    for (let i = 0; i < slotMachine.animationFrames.length; i++) {
+        const frame = slotMachine.animationFrames[i];
+        const isFinal = i === slotMachine.animationFrames.length - 1;
+        
+        let caption = `🎰 *SLOT MACHINE*`;
+        if (!isFinal) {
+            caption += `\n⏳ Frame ${i + 1}/${slotMachine.animationFrames.length}`;
         } else {
-            finalCaption += `😔 Ritenta!\n`;
-            finalCaption += `🎯 Combinazione: ${slotMachine.result.symbols.map(s => s.emoji).join(' ')}`;
+            if (slotMachine.result.win) {
+                caption += `\n🎉 *${slotMachine.result.type.toUpperCase()}!*`;
+                caption += `\n💰 Vincita: ${slotMachine.formatNumber(slotMachine.result.amount)} UC`;
+                caption += `\n✨ Moltiplicatore: x${slotMachine.result.multiplier}`;
+            } else {
+                caption += `\n😔 Ritenta!`;
+            }
+            caption += `\n🎯 Combinazione: ${slotMachine.result.symbols.map(s => s.emoji).join(' ')}`;
         }
 
-        const buttons = [
-            { buttonId: `${usedPrefix}slot 100`, buttonText: { displayText: "🎰 Gioca 100 UC" }, type: 1 },
-            { buttonId: `${usedPrefix}slot 500`, buttonText: { displayText: "🎰 Gioca 500 UC" }, type: 1 },
-            { buttonId: `${usedPrefix}slot ${Math.floor(user.limit/2)}`, buttonText: { displayText: "🎰 Metà saldo" }, type: 1 }
-        ];
+        caption += `\n💶 Puntata: ${slotMachine.formatNumber(betAmount)} UC`;
+        caption += `\n📊 Saldo: ${slotMachine.formatNumber(user.limit)} UC`;
 
         await conn.sendMessage(chat, {
-            image: finalImage,
-            caption: finalCaption,
-            footer: 'Slot Machine 🎰',
-            buttons: buttons
-        }, { quoted: m });
+            image: frame,
+            caption: caption,
+            footer: 'Slot Machine 🎰'
+        });
 
-    }, 2000);
+        // Aspetta tra i frame (più veloce all'inizio, più lento alla fine)
+        const delay = isFinal ? 1000 : 200 + (i * 50);
+        await new Promise(resolve => setTimeout(resolve, delay));
+    }
+
+    // Pulsanti per giocare ancora
+    const buttons = [
+        { buttonId: `${usedPrefix}slot 100`, buttonText: { displayText: "🎰 100 UC" }, type: 1 },
+        { buttonId: `${usedPrefix}slot 500`, buttonText: { displayText: "🎰 500 UC" }, type: 1 },
+        { buttonId: `${usedPrefix}slot ${Math.floor(user.limit/2)}`, buttonText: { displayText: "🎰 Metà saldo" }, type: 1 }
+    ];
+
+    await conn.sendMessage(chat, {
+        text: '💡 Vuoi giocare ancora?',
+        footer: 'Slot Machine 🎰',
+        buttons: buttons
+    });
 };
 
 handler.help = ['slot <puntata>'];
