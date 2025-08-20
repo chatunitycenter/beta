@@ -16,31 +16,32 @@ let handler = async (m, { conn, args }) => {
     let res = await conn.groupGetInviteInfo(code);
     if (!res) return m.reply('❌ Link non valido o scaduto.');
 
+    let nome = res.subject || "Gruppo sconosciuto";
     let membri = res.size || 0;
-    let nomeGruppo = res.subject || 'Gruppo Sconosciuto';
 
     if (res.joinApprovalRequired) {
-      if (membri >= MIN_MEMBERS) {
-        await conn.groupRequestJoin(code); // manda richiesta di ingresso
-        return m.reply(`✅ Richiesta inviata per entrare in *${nomeGruppo}* (${membri} membri).`);
-      } else {
-        return m.reply(`❌ Il gruppo *${nomeGruppo}* ha solo ${membri} membri, richiesta non inviata.`);
-      }
+      return m.reply(
+        `ℹ️ Il gruppo *${nome}* richiede approvazione per entrare.\n👥 Membri stimati: ${membri}\n\n${
+          membri >= MIN_MEMBERS
+            ? `✅ Ha almeno ${MIN_MEMBERS} membri, puoi mandare la richiesta.`
+            : `❌ Non ha almeno ${MIN_MEMBERS} membri, non conviene unirsi.`
+        }`
+      );
     }
 
-    let groupId = await conn.groupAcceptInvite(code);
-    let metadata = await conn.groupMetadata(groupId);
-    let membriAttuali = metadata.participants.length;
-
-    if (membriAttuali < MIN_MEMBERS) {
-      await conn.groupLeave(groupId);
-      return m.reply(`❌ Il gruppo *${nomeGruppo}* ha solo ${membriAttuali} membri, il bot è uscito.`);
-    } else {
-      return m.reply(`✅ Il bot è entrato in *${nomeGruppo}* (${membriAttuali} membri).`);
+    if (membri < MIN_MEMBERS) {
+      return m.reply(
+        `❌ Il gruppo *${nome}* ha solo ${membri} membri, servono almeno ${MIN_MEMBERS}.`
+      );
     }
+
+    return m.reply(
+      `✅ Il gruppo *${nome}* ha ${membri} membri.\n👉 Puoi unirti senza problemi.`
+    );
+
   } catch (e) {
     console.error(e);
-    m.reply(`⚠️ Errore durante il join: ${e.message || e}`);
+    m.reply(`⚠️ Errore durante la verifica del link: ${e.message || e}`);
   }
 };
 
