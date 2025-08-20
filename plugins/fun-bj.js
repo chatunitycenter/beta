@@ -3,12 +3,13 @@ import { createCanvas } from 'canvas';
 const CARD_WIDTH = 80;
 const CARD_HEIGHT = 120;
 const CARD_RADIUS = 10;
-const TABLE_WIDTH = 600;
-const TABLE_HEIGHT = 400;
+const TABLE_WIDTH = 700;
+const TABLE_HEIGHT = 500;
 
 class BlackjackGame {
-    constructor(playerId) {
+    constructor(playerId, userData) {
         this.playerId = playerId;
+        this.userData = userData;
         this.deck = this.createDeck();
         this.shuffleDeck();
         this.playerHand = [];
@@ -17,7 +18,6 @@ class BlackjackGame {
         this.dealerScore = 0;
         this.gameState = 'betting';
         this.betAmount = 0;
-        this.playerBalance = 1000;
         this.winner = null;
         this.message = "💵 Fai la tua puntata!";
         this.startTime = Date.now();
@@ -77,12 +77,12 @@ class BlackjackGame {
     }
 
     startGame(bet) {
-        if (bet > this.playerBalance) {
+        if (bet > this.userData.limit) {
             return { error: "💰 Fondi insufficienti!" };
         }
 
         this.betAmount = bet;
-        this.playerBalance -= bet;
+        this.userData.limit -= bet;
         this.playerHand = [];
         this.dealerHand = [];
         
@@ -145,18 +145,18 @@ class BlackjackGame {
         
         if (this.dealerScore > 21) {
             this.winner = 'player';
-            this.playerBalance += this.betAmount * 2;
+            this.userData.limit += this.betAmount * 2;
             this.message = "🎉 Dealer sballato! Hai vinto!";
         } else if (this.playerScore > this.dealerScore) {
             this.winner = 'player';
-            this.playerBalance += this.betAmount * 2;
+            this.userData.limit += this.betAmount * 2;
             this.message = "🎉 Hai vinto!";
         } else if (this.playerScore < this.dealerScore) {
             this.winner = 'dealer';
             this.message = "😔 Dealer vince!";
         } else {
             this.winner = 'push';
-            this.playerBalance += this.betAmount;
+            this.userData.limit += this.betAmount;
             this.message = "🤝 Pareggio!";
         }
     }
@@ -165,65 +165,110 @@ class BlackjackGame {
         const canvas = createCanvas(TABLE_WIDTH, TABLE_HEIGHT);
         const ctx = canvas.getContext('2d');
 
-        // Sfondo tavolo
-        const gradient = ctx.createLinearGradient(0, 0, TABLE_WIDTH, TABLE_HEIGHT);
-        gradient.addColorStop(0, '#0d5e2c');
-        gradient.addColorStop(1, '#1a7a40');
-        ctx.fillStyle = gradient;
+        // Sfondo tavolo di feltro verde
+        ctx.fillStyle = '#0d5e2c';
         ctx.fillRect(0, 0, TABLE_WIDTH, TABLE_HEIGHT);
 
-        // Bordo tavolo
-        ctx.strokeStyle = '#8B4513';
-        ctx.lineWidth = 10;
-        ctx.strokeRect(5, 5, TABLE_WIDTH - 10, TABLE_HEIGHT - 10);
-
-        // Testo centrale
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-        ctx.font = 'bold 40px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('BLACKJACK', TABLE_WIDTH / 2, TABLE_HEIGHT / 2);
-
-        // Disegna mano giocatore
-        this.drawHand(ctx, this.playerHand, TABLE_WIDTH / 2, TABLE_HEIGHT - 100, 'Giocatore');
-
-        // Disegna mano dealer
-        const showAllCards = this.gameState !== 'player-turn';
-        this.drawHand(ctx, this.dealerHand, TABLE_WIDTH / 2, 100, 'Dealer', showAllCards);
-
-        // Punteggi
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 20px Arial';
-        
-        if (this.gameState !== 'betting') {
-            ctx.fillText(`Punteggio: ${this.playerScore}`, TABLE_WIDTH / 2, TABLE_HEIGHT - 130);
-            
-            if (showAllCards) {
-                ctx.fillText(`Punteggio: ${this.dealerScore}`, TABLE_WIDTH / 2, 170);
-            } else if (this.dealerHand.length > 0) {
-                const visibleScore = this.calculateScore([this.dealerHand[0]]);
-                ctx.fillText(`Punteggio: ${visibleScore}+`, TABLE_WIDTH / 2, 170);
+        // Pattern texture del feltro
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+        for (let i = 0; i < TABLE_WIDTH; i += 4) {
+            for (let j = 0; j < TABLE_HEIGHT; j += 4) {
+                if ((i + j) % 8 === 0) {
+                    ctx.fillRect(i, j, 2, 2);
+                }
             }
         }
 
-        // Info gioco
-        ctx.font = '16px Arial';
-        ctx.fillText(this.message, TABLE_WIDTH / 2, TABLE_HEIGHT / 2 + 50);
-        ctx.fillText(`Saldo: €${this.playerBalance} | Puntata: €${this.betAmount}`, TABLE_WIDTH / 2, 30);
+        // Bordo tavolo in legno
+        ctx.strokeStyle = '#8B4513';
+        ctx.lineWidth = 15;
+        ctx.strokeRect(10, 10, TABLE_WIDTH - 20, TABLE_HEIGHT - 20);
+
+        // Decorazione angoli
+        ctx.strokeStyle = '#D2691E';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(25, 25, 15, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(TABLE_WIDTH - 25, 25, 15, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(25, TABLE_HEIGHT - 25, 15, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(TABLE_WIDTH - 25, TABLE_HEIGHT - 25, 15, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Logo centrale
+        ctx.fillStyle = 'rgba(255, 215, 0, 0.2)';
+        ctx.font = 'bold 60px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('♠️♥️♣️♦️', TABLE_WIDTH / 2, TABLE_HEIGHT / 2);
+
+        // Disegna mano giocatore
+        this.drawHand(ctx, this.playerHand, TABLE_WIDTH / 2, TABLE_HEIGHT - 120, 'GIOCATORE');
+
+        // Disegna mano dealer
+        const showAllCards = this.gameState !== 'player-turn';
+        this.drawHand(ctx, this.dealerHand, TABLE_WIDTH / 2, 120, 'DEALER', showAllCards);
+
+        // Punteggi con sfondo
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.beginPath();
+        ctx.roundRect(TABLE_WIDTH / 2 - 80, TABLE_HEIGHT - 160, 160, 30, 15);
+        ctx.fill();
+        
+        ctx.fillStyle = '#FFD700';
+        ctx.font = 'bold 20px Arial';
+        ctx.fillText(`PUNTEGGIO: ${this.playerScore}`, TABLE_WIDTH / 2, TABLE_HEIGHT - 140);
+
+        if (showAllCards) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.beginPath();
+            ctx.roundRect(TABLE_WIDTH / 2 - 80, 80, 160, 30, 15);
+            ctx.fill();
+            
+            ctx.fillStyle = '#FFD700';
+            ctx.fillText(`PUNTEGGIO: ${this.dealerScore}`, TABLE_WIDTH / 2, 100);
+        }
+
+        // Info gioco con sfondo
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        ctx.beginPath();
+        ctx.roundRect(TABLE_WIDTH / 2 - 200, TABLE_HEIGHT / 2 - 20, 400, 40, 20);
+        ctx.fill();
+        
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 18px Arial';
+        ctx.fillText(this.message, TABLE_WIDTH / 2, TABLE_HEIGHT / 2 + 5);
+
+        // Portafoglio e puntata
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+        ctx.beginPath();
+        ctx.roundRect(20, 20, 250, 60, 15);
+        ctx.fill();
+        
+        ctx.fillStyle = '#FFD700';
+        ctx.font = 'bold 16px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText(`💶 PORTFOGLIO: ${this.formatNumber(this.userData.limit)} UC`, 40, 45);
+        ctx.fillText(`🎯 PUNTATA: ${this.formatNumber(this.betAmount)} UC`, 40, 70);
 
         return canvas.toBuffer('image/png');
     }
 
     drawHand(ctx, hand, centerX, y, label, showAll = true) {
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 16px Arial';
+        ctx.fillStyle = '#FFD700';
+        ctx.font = 'bold 18px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText(label, centerX, y - 40);
+        ctx.fillText(label, centerX, y - 50);
 
         const totalWidth = (hand.length * CARD_WIDTH) + ((hand.length - 1) * 20);
         let x = centerX - totalWidth / 2;
 
         for (let i = 0; i < hand.length; i++) {
-            if (!showAll && i === 1 && label === 'Dealer' && this.gameState === 'player-turn') {
+            if (!showAll && i === 1 && label === 'DEALER' && this.gameState === 'player-turn') {
                 this.drawCardBack(ctx, x, y);
             } else {
                 this.drawCard(ctx, x, y, hand[i]);
@@ -233,58 +278,101 @@ class BlackjackGame {
     }
 
     drawCard(ctx, x, y, card) {
-        // Sfondo carta
-        ctx.fillStyle = '#FFFFFF';
-        ctx.beginPath();
-        ctx.roundRect(x, y, CARD_WIDTH, CARD_HEIGHT, CARD_RADIUS);
-        ctx.fill();
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        // Colore in base al seme
-        ctx.fillStyle = ['♥', '♦'].includes(card.suit) ? '#FF0000' : '#000000';
-
-        // Valore
-        ctx.font = 'bold 20px Arial';
-        ctx.fillText(card.value, x + 15, y + 25);
-
-        // Seme
-        ctx.font = '30px Arial';
-        ctx.fillText(card.suit, x + CARD_WIDTH / 2, y + CARD_HEIGHT / 2 + 10);
-
-        // Angolo inferiore
-        ctx.font = 'bold 20px Arial';
-        ctx.fillText(card.value, x + CARD_WIDTH - 15, y + CARD_HEIGHT - 15);
-        ctx.font = '20px Arial';
-        ctx.fillText(card.suit, x + CARD_WIDTH - 15, y + CARD_HEIGHT - 35);
-    }
-
-    drawCardBack(ctx, x, y) {
-        // Sfondo
-        ctx.fillStyle = '#1a237e';
+        // Sfondo carta con gradiente
+        const gradient = ctx.createLinearGradient(x, y, x + CARD_WIDTH, y + CARD_HEIGHT);
+        gradient.addColorStop(0, '#FFFFFF');
+        gradient.addColorStop(1, '#F8F8F8');
+        
+        ctx.fillStyle = gradient;
         ctx.beginPath();
         ctx.roundRect(x, y, CARD_WIDTH, CARD_HEIGHT, CARD_RADIUS);
         ctx.fill();
         
-        // Bordo
+        // Ombra
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+        ctx.shadowBlur = 5;
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 2;
         ctx.strokeStyle = '#000000';
         ctx.lineWidth = 2;
         ctx.stroke();
+        ctx.shadowColor = 'transparent';
 
-        // Pattern
-        ctx.fillStyle = '#3949ab';
-        for (let i = 0; i < 4; i++) {
-            for (let j = 0; j < 6; j++) {
+        // Colore in base al seme
+        ctx.fillStyle = ['♥', '♦'].includes(card.suit) ? '#FF0000' : '#000000';
+
+        // Valore angolo superiore
+        ctx.font = 'bold 22px Arial';
+        ctx.fillText(card.value, x + 18, y + 28);
+
+        // Seme angolo superiore
+        ctx.font = '18px Arial';
+        ctx.fillText(card.suit, x + 18, y + 50);
+
+        // Seme centrale grande
+        ctx.font = '48px Arial';
+        ctx.fillText(card.suit, x + CARD_WIDTH / 2, y + CARD_HEIGHT / 2 + 15);
+
+        // Valore angolo inferiore (ruotato)
+        ctx.save();
+        ctx.translate(x + CARD_WIDTH - 18, y + CARD_HEIGHT - 28);
+        ctx.rotate(Math.PI);
+        ctx.font = 'bold 22px Arial';
+        ctx.fillText(card.value, 0, 0);
+        ctx.restore();
+
+        // Seme angolo inferiore (ruotato)
+        ctx.save();
+        ctx.translate(x + CARD_WIDTH - 18, y + CARD_HEIGHT - 50);
+        ctx.rotate(Math.PI);
+        ctx.font = '18px Arial';
+        ctx.fillText(card.suit, 0, 0);
+        ctx.restore();
+
+        // Pattern decorativo
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x + 10, y + 60);
+        ctx.lineTo(x + CARD_WIDTH - 10, y + 60);
+        ctx.stroke();
+    }
+
+    drawCardBack(ctx, x, y) {
+        // Sfondo con gradiente blu
+        const gradient = ctx.createLinearGradient(x, y, x + CARD_WIDTH, y + CARD_HEIGHT);
+        gradient.addColorStop(0, '#1a237e');
+        gradient.addColorStop(1, '#283593');
+        
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.roundRect(x, y, CARD_WIDTH, CARD_HEIGHT, CARD_RADIUS);
+        ctx.fill();
+        
+        // Bordo oro
+        ctx.strokeStyle = '#FFD700';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Pattern decorativo
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        for (let i = 0; i < 5; i++) {
+            for (let j = 0; j < 3; j++) {
                 ctx.beginPath();
-                ctx.arc(x + 15 + j * 14, y + 20 + i * 25, 4, 0, Math.PI * 2);
+                ctx.arc(x + 20 + i * 15, y + 30 + j * 30, 5, 0, Math.PI * 2);
                 ctx.fill();
             }
         }
 
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 12px Arial';
-        ctx.fillText('?', x + CARD_WIDTH / 2, y + CARD_HEIGHT / 2);
+        // Punto interrogativo centrale
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 40px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('?', x + CARD_WIDTH / 2, y + CARD_HEIGHT / 2 + 15);
+    }
+
+    formatNumber(num) {
+        return new Intl.NumberFormat('it-IT').format(num);
     }
 }
 
@@ -295,13 +383,12 @@ async function handleBlackjackTimeout(conn, chat, gameId) {
     if (!game || game.id !== gameId) return;
 
     try {
-        game.message = "⏰ Tempo scaduto! Partita annullata.";
         const image = await game.generateTableImage();
         
         await conn.sendMessage(chat, {
             image: image,
-            caption: `⏰ Tempo scaduto!\nSaldo attuale: €${game.playerBalance}`,
-            footer: 'Blackjack Bot'
+            caption: `⏰ Tempo scaduto! Partita annullata.\n💶 Portafoglio: ${game.formatNumber(game.userData.limit)} UC`,
+            footer: '♠️ Blackjack Bot ♣️'
         });
         
         delete global.blackjackGame[chat];
@@ -313,29 +400,35 @@ async function handleBlackjackTimeout(conn, chat, gameId) {
 
 async function startBlackjack(conn, m, bet) {
     const chat = m.chat;
+    const who = m.sender;
+    const user = global.db.data.users[who];
+
+    if (!user) return conn.reply(m.chat, '❌ Utente non trovato nel database!', m);
 
     if (global.blackjackGame?.[chat]) {
         return conn.reply(m.chat, '🎰 Partita di blackjack già in corso!', m);
     }
 
     try {
-        const game = new BlackjackGame(m.sender);
         const betAmount = parseInt(bet);
-
-        if (isNaN(betAmount) || betAmount < 10 || betAmount > game.playerBalance) {
-            return conn.reply(m.chat, `❌ Puntata non valida! Inserisci un importo tra 10 e ${game.playerBalance}`, m);
+        if (isNaN(betAmount) || betAmount < 10 || betAmount > user.limit) {
+            return conn.reply(m.chat, `❌ Puntata non valida! Inserisci un importo tra 10 e ${user.limit} UC`, m);
         }
 
+        const game = new BlackjackGame(who, user);
         const result = game.startGame(betAmount);
         if (result.error) return conn.reply(m.chat, result.error, m);
 
         const image = await game.generateTableImage();
-        const caption = `🎰 Blackjack iniziato!\nPuntata: €${betAmount}\nSaldo: €${game.playerBalance}\n\nUsa .hit .stand .double`;
+        const name = conn.getName(who);
+        
+        const caption = `🎰 *BLACKJACK* - ${name}\n💶 Puntata: ${game.formatNumber(betAmount)} UC\n📋 Saldo: ${game.formatNumber(user.limit)} UC\n\n⚡ Comandi: .hit .stand .double`;
 
         const msg = await conn.sendMessage(chat, {
             image: image,
             caption: caption,
-            footer: 'Blackjack Bot'
+            footer: '♠️ Blackjack Bot ♣️',
+            mentions: [who]
         }, { quoted: m });
 
         game.id = msg.key.id;
@@ -360,7 +453,15 @@ let handler = async (m, { conn, command, usedPrefix, text }) => {
         return;
     }
 
-    if (command === 'hit' && game) {
+    if (!game) {
+        return conn.reply(m.chat, '❌ Nessuna partita in corso! Usa .blackjack [puntata]', m);
+    }
+
+    if (m.sender !== game.playerId) {
+        return conn.reply(m.chat, '❌ Non è il tuo turno!', m);
+    }
+
+    if (command === 'hit') {
         const result = game.playerHit();
         if (result.error) return conn.reply(m.chat, result.error, m);
 
@@ -368,7 +469,11 @@ let handler = async (m, { conn, command, usedPrefix, text }) => {
         let caption = `📋 Punteggio: ${game.playerScore}`;
         if (result.bust) caption += "\n💥 Sballato!";
 
-        await conn.sendMessage(chat, { image: image, caption: caption });
+        await conn.sendMessage(chat, { 
+            image: image, 
+            caption: caption,
+            footer: '♠️ Blackjack Bot ♣️'
+        });
         
         if (game.gameState === 'game-over') {
             delete global.blackjackGame[chat];
@@ -376,28 +481,30 @@ let handler = async (m, { conn, command, usedPrefix, text }) => {
         return;
     }
 
-    if (command === 'stand' && game) {
+    if (command === 'stand') {
         const result = game.playerStand();
         if (result.error) return conn.reply(m.chat, result.error, m);
 
         const image = await game.generateTableImage();
-        const caption = `🎯 Stai a ${game.playerScore}\n${game.message}`;
-
-        await conn.sendMessage(chat, { image: image, caption: caption });
+        await conn.sendMessage(chat, { 
+            image: image, 
+            caption: game.message,
+            footer: '♠️ Blackjack Bot ♣️'
+        });
         delete global.blackjackGame[chat];
         return;
     }
 
-    if (command === 'double' && game) {
+    if (command === 'double') {
         if (game.playerHand.length !== 2) {
             return conn.reply(m.chat, '❌ Puoi raddoppiare solo con 2 carte!', m);
         }
 
-        if (game.playerBalance < game.betAmount) {
+        if (game.userData.limit < game.betAmount) {
             return conn.reply(m.chat, '❌ Fondi insufficienti per raddoppiare!', m);
         }
 
-        game.playerBalance -= game.betAmount;
+        game.userData.limit -= game.betAmount;
         game.betAmount *= 2;
 
         game.playerHit();
@@ -406,16 +513,15 @@ let handler = async (m, { conn, command, usedPrefix, text }) => {
         }
 
         const image = await game.generateTableImage();
-        await conn.sendMessage(chat, { image: image, caption: game.message });
+        await conn.sendMessage(chat, { 
+            image: image, 
+            caption: game.message,
+            footer: '♠️ Blackjack Bot ♣️'
+        });
         
         if (game.gameState === 'game-over') {
             delete global.blackjackGame[chat];
         }
-        return;
-    }
-
-    if (!game) {
-        return conn.reply(m.chat, '❌ Nessuna partita in corso! Usa .blackjack [puntata]', m);
     }
 };
 
