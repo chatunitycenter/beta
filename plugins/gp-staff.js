@@ -26,7 +26,7 @@ END:VCARD`.replace(/\n/g, '\r\n');
                 { vcard: createVCard('Developer 6', '393509368693', 'Developer') },
                 { vcard: createVCard('Developer 7', '66621409462', 'Developer') },
                 { vcard: createVCard('Developer 8', '393476686131', 'Developer') },
-                { vcard: createVCard('Developer 9', '393669729127', 'Developer') },
+                { vcard: createVCard('Developer 9', '8562057600084', 'Developer') },
                 { vcard: createVCard('Developer 10', '27746449887', 'Developer') }
             ]
         }
