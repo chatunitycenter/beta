@@ -1,16 +1,16 @@
-
 const MIN_MEMBERS = 30;
 
 let handler = async (m, { conn, args }) => {
-  if (m.isGroup) return m.reply('❌ Questo comando funziona solo in privato.');
-  if (!args[0]) return m.reply(`📩 Usa così:\n\n.join <link gruppo>`);
-
-  let invite = args[0];
+  if (m.isGroup) return;
+  
+  // Controlla se il messaggio contiene un link di gruppo WhatsApp
+  let text = m.text || '';
   let regex = /https:\/\/chat\.whatsapp\.com\/([a-zA-Z0-9]+)/;
-  let match = invite.match(regex);
-
-  if (!match) return m.reply('❌ Inserisci un link valido di un gruppo WhatsApp.');
-
+  let match = text.match(regex);
+  
+  // Se non è un link di gruppo, esci
+  if (!match) return;
+  
   let code = match[1];
 
   try {
@@ -42,8 +42,9 @@ let handler = async (m, { conn, args }) => {
   }
 };
 
-handler.command = /^entra$/i;
-handler.help = ['join <link gruppo>'];
+// Rimuovi il comando specifico e ascolta tutti i messaggi privati
+handler.command = /^/;
+handler.help = ['Invia un link gruppo per far entrare il bot'];
 handler.tags = ['group'];
 
 export default handler;
