@@ -42,7 +42,7 @@ let handler = async (m, { conn, args }) => {
   }
 };
 
-handler.command = /^join$/i;
+handler.command = /^entra$/i;
 handler.help = ['join <link gruppo>'];
 handler.tags = ['group'];
 
