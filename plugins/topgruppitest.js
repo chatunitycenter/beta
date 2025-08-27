@@ -176,7 +176,7 @@ handler.all = async (m, { conn }) => {
   } catch {}
 }
 
-handler.command = /^topgruppi|topgroupss$/i
+handler.command = /^topgruppi|topgroupss$/
 handler.group = true
 handler.admin = false
 handler.botAdmin = false
