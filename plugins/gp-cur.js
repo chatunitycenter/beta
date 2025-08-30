@@ -1,4 +1,4 @@
-//Fatto da Gab x Chatunity
+//Fatto da Gab x Chatunity :)
 
 import { createCanvas, loadImage } from 'canvas'
 import fetch from 'node-fetch'
