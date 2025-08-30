@@ -1,3 +1,5 @@
+//Fatto da Gab x Chatunity
+
 import { createCanvas, loadImage } from 'canvas'
 import fetch from 'node-fetch'
 import fs from 'fs'
