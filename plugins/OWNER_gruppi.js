@@ -1,4 +1,3 @@
-//Plugin Fatto da Gabs333 Velocizzato
 const validateOwnerAccess = (message) => {
     if (!message.fromMe && !global.db.data.users[message.sender]?.owner) {
         throw new Error("Solo il proprietario del bot può usare questo comando.");
