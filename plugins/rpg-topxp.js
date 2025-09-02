@@ -1,3 +1,10 @@
+/* 
+==========================================
+Crediti al solo e unico kekko aka nexus
+github.com/kekk00
+==========================================
+*/
+
 import fs from 'fs/promises'
 import path from 'path'
 import { createCanvas, loadImage, registerFont } from 'canvas'
@@ -143,7 +150,7 @@ async function createTopXPImage(topUsers){
   ctx.textAlign='center'
   ctx.font='18px Montserrat'
   ctx.fillStyle='#fff'
-  ctx.fillText('˙ . ᵗˢᵏ ꒷ . 𝐧𝐞𝐱𝐮𝑠 𖦹˙🪽',width/2,height-30)
+  ctx.fillText('made by ChatUnity',width/2,height-30)
 
   return canvas.toBuffer('image/png')
 }
