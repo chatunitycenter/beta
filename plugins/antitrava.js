@@ -1,3 +1,7 @@
+//
+//By @NeKosmic || https://github.com/NeKosmic/
+//
+
 import * as fs from 'fs'
 
 export async function before(m, { conn, isAdmin, isBotAdmin, usedPrefix }) {
