@@ -114,8 +114,8 @@ pm2 logs
 Grazie a tutti coloro che hanno contribuito a questo progetto!
 
 <p align="center">
-  <a href="https://github.com/chatunitycenter/chatunity-bot/graphs/contributors">
-    <img src="https://contrib.rocks/image?repo=chatunitycenter/chatunity-bot"/>
+  <a href="https://github.com/laboratiork25/beta/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=laboratiork25/beta"/>
   </a>
 </p>
 
