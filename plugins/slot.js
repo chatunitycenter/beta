@@ -26,13 +26,13 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         user.limit = (user.limit || 0) + 800
         user.exp = (user.exp || 0) + 100
         resultMsg = `🎉 Hai vinto!\n+800 UC\n+100 exp`
-        videoFile = './icone/vincita.mp4'
+        videoFile = './icone/perdita.mp4'
     } else {
         user.limit = (user.limit || 0) - bet
         user.exp = Math.max(0, (user.exp || 0) - bet)
         resultMsg = `🤡 Hai perso!\n-${bet} UC\n-${bet} exp`
-        videoFile = './icone/perdita.mp4'
-    }
+        videoFile = './icone/vincita.mp4'
+    }g
 
     // Invia SEMPRE il video
     await conn.sendMessage(m.chat, { 
@@ -52,3 +52,4 @@ handler.tags = ['game']
 handler.command = ['slot']
 
 export default handler
+
