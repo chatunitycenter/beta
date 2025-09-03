@@ -50,6 +50,11 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
     let z = [estratti[2], estratti[2], estratti[2]];
 
     let end;
+    // Ricompense
+    const unitycoinsWin = 500
+    const expWin = 100
+    const expLose = apuesta
+
     if (win || (estratti[0] === estratti[1] && estratti[1] === estratti[2])) {
         end = `𝐡𝐚𝐢 𝐯𝐢𝐧𝐭𝐨 🎉 🎁\nComplimenti, hai vinto 500 unitycoins!`
         users.exp += apuesta + apuesta
@@ -70,11 +75,14 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
     // Prepara solo il messaggio informativo (senza matrice slot)
     let infoMsg = '';
     if (win || (estratti[0] === estratti[1] && estratti[1] === estratti[2])) {
-        infoMsg = `🎉 Hai vinto!\nGuadagno: +500 unitycoins`;
+        users.limit = (users.limit || 0) + unitycoinsWin
+        users.exp += expWin
+        infoMsg = `🎉 Hai vinto!\nGuadagno: +${unitycoinsWin} unitycoins\n+${expWin} exp`;
     } else if (estratti[0] === estratti[1] || estratti[0] === estratti[2] || estratti[1] === estratti[2]) {
         infoMsg = `Continua a tentare...`;
     } else {
-        infoMsg = `🤡 Hai perso!\nPerdita: -${apuesta} exp`;
+        users.exp -= expLose
+        infoMsg = `🤡 Hai perso!\nPerdita: -${expLose} exp`;
     }
 
     // Invio solo la GIF in base al risultato e il messaggio info separato con delay di 3 secondi
