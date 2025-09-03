@@ -67,23 +67,30 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         cooldowns[m.sender] = Date.now();
     }
 
-    let risultatoSlot = `
-       🎰 ┃ 𝐒𝐋𝐎𝐓
-     ──────────
-       ${x[0]} : ${y[0]} : ${z[0]}
-       ${x[1]} : ${y[1]} : ${z[1]}
-       ${x[2]} : ${y[2]} : ${z[2]}
-     ──────────
-        
-${end}`
+    // Prepara solo il messaggio informativo (senza matrice slot)
+    let infoMsg = '';
+    if (win || (estratti[0] === estratti[1] && estratti[1] === estratti[2])) {
+        infoMsg = `🎉 Hai vinto!\nGuadagno: +500 unitycoins`;
+    } else if (estratti[0] === estratti[1] || estratti[0] === estratti[2] || estratti[1] === estratti[2]) {
+        infoMsg = `Continua a tentare...`;
+    } else {
+        infoMsg = `🤡 Hai perso!\nPerdita: -${apuesta} exp`;
+    }
 
-    // Invio solo la GIF in base al risultato
+    // Invio solo la GIF in base al risultato e il messaggio info separato
     if (win) {
         await conn.sendMessage(
             m.chat,
             {
-                video: { url: './icone/vincita.gif' },
+                video: { url: './icone/vincita.mp4' },
                 gifPlayback: true
+            },
+            { quoted: m }
+        );
+        await conn.sendMessage(
+            m.chat,
+            {
+                text: infoMsg
             },
             { quoted: m }
         );
@@ -91,8 +98,15 @@ ${end}`
         await conn.sendMessage(
             m.chat,
             {
-                video: { url: './icone/perdita.gif' },
+                video: { url: './icone/perdita.mp4' },
                 gifPlayback: true
+            },
+            { quoted: m }
+        );
+        await conn.sendMessage(
+            m.chat,
+            {
+                text: infoMsg
             },
             { quoted: m }
         );
@@ -100,7 +114,7 @@ ${end}`
         await conn.sendMessage(
             m.chat,
             {
-                text: risultatoSlot
+                text: infoMsg
             },
             { quoted: m }
         );
