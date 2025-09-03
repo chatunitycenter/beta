@@ -86,9 +86,6 @@ ${end}`
                 gifPlayback: true,
                 caption: risultatoSlot,
                 footer: 'Vuoi giocare ancora?',
-                buttons: [
-                    { buttonId: `${usedPrefix}slot`, buttonText: { displayText: "🎰 Gioca ancora" }, type: 1 },
-                ],
                 viewOnce: true,
                 headerType: 4
             },
@@ -102,9 +99,6 @@ ${end}`
                 gifPlayback: true,
                 caption: risultatoSlot,
                 footer: 'Vuoi giocare ancora?',
-                buttons: [
-                    { buttonId: `${usedPrefix}slot`, buttonText: { displayText: "🎰 Gioca ancora" }, type: 1 },
-                ],
                 viewOnce: true,
                 headerType: 4
             },
@@ -116,9 +110,6 @@ ${end}`
             {
                 text: risultatoSlot,
                 footer: 'Vuoi giocare ancora?',
-                buttons: [
-                    { buttonId: `${usedPrefix}slot`, buttonText: { displayText: "🎰 Gioca ancora" }, type: 1 },
-                ],
                 viewOnce: true,
                 headerType: 4
             },
