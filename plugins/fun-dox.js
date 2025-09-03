@@ -1,4 +1,3 @@
-//Código creando por LAN sígueme en ig https://www.instagram.com/lansg___/
 
 import {performance} from 'perf_hooks';
 const handler = async (m, {conn, text}) => {
@@ -7,7 +6,7 @@ const end = performance.now();
 const executionTime = (end - start);
 async function loading() {
 var hawemod = [
-    "Injecting Malware",
+    "Iniettando Malware",
     " █ 10%",
     " █ █ 20%",
     " █ █ █ 30%",
@@ -18,15 +17,15 @@ var hawemod = [
     " █ █ █ █ █ █ █ █ 80%",
     " █ █ █ █ █ █ █ █ █ 90%",
     " █ █ █ █ █ █ █ █ █ █ 100%",
-    "System hyjacking on process.. \\n Conecting to Server error to find 404 ",
-    "Device successfully connected... \\n Riciving data...",
-    "Data hyjacked from divice 100% completed \\n killing all evidence killing all malwares...",
-    " HACKING COMPLETED ",
-    " SENDING LOG DOCUMENTS...",
-    " SUCCESSFULLY SENT DATA AND Connection disconnected",
-    "BACKLOGS CLEARED"
+    "Violazione del sistema in corso.. \n Connessione al server errore 404 ",
+    "Dispositivo connesso con successo... \n Ricezione dati...",
+    "Dati sottratti dal dispositivo 100% completato \n Eliminazione di tutte le prove ed eliminazione di tutti i malware...",
+    " HACKING COMPLETATO ",
+    " INVIO DEI LOG...",
+    " DATI INVIATI CON SUCCESSO E Connessione disconnessa",
+    "REGISTRI PULITI"
   ];
-      let { key } = await conn.sendMessage(m.chat, {text: `*☠ ¡¡Starting doxxing!! ☠*`}, {quoted: m})
+      let { key } = await conn.sendMessage(m.chat, {text: `*☠ ¡¡Avvio del doxxing!! ☠*`}, {quoted: m})
  for (let i = 0; i < hawemod.length; i++) {
    await new Promise(resolve => setTimeout(resolve, 1000)); 
    await conn.sendMessage(m.chat, {text: hawemod[i], edit: key}, {quoted: m}); 
@@ -34,11 +33,11 @@ var hawemod = [
  }
 loading()    
 };
-handler.help = ['doxxing <nombre> | <@tag>'];
-handler.tags = ['fun'];
+handler.help = ['doxxing <nome> | <@tag>'];
+handler.tags = ['divertimento'];
 handler.command = ['dox']
 handler.group = true
-handler.register = true
+
 
 export default handler;
 
