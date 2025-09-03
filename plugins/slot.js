@@ -20,14 +20,13 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
     }
 
     let win = Math.random() < 0.5
-    let resultMsg, videoFile
+    let resultMsg, gifFile
 
     // Calcola informazioni livello e XP
     user.exp = Number(user.exp) || 0
     user.level = Number(user.level) || 1
     let { min: minXP, xp: levelXP, max: maxXP } = xpRange(user.level, global.multiplier || 1)
     let currentLevelXP = user.exp - minXP
-    let xpNeeded = Math.max(0, maxXP - user.exp)
 
     if (win) {
         user.limit = (user.limit || 0) + 800
@@ -37,7 +36,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         resultMsg += '│ ➕ *800 UC*\n'
         resultMsg += '│ ➕ *100 XP*\n'
         resultMsg += '└──────────────\n'
-        videoFile = './icone/vincita.mp4'
+        gifFile = './icone/perdita.gif'  // Cambiato in GIF
     } else {
         user.limit = (user.limit || 0) - bet
         user.exp = Math.max(0, (user.exp || 0) - bet)
@@ -46,7 +45,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         resultMsg += '│ ➖ *' + bet + ' UC*\n'
         resultMsg += '│ ➖ *' + bet + ' XP*\n'
         resultMsg += '└──────────────\n'
-        videoFile = './icone/perdita.mp4'
+        gifFile = './icone/vincita.gif'  // Cambiato in GIF
     }
 
     // Aggiungi informazioni saldo attuale
@@ -59,9 +58,10 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
     resultMsg += '└──────────────\n'
     resultMsg += '\nℹ️ Usa ' + usedPrefix + 'miniera per guadagnare più XP!'
 
-    // Invia il video
+    // Invia la GIF invece del video
     await conn.sendMessage(m.chat, { 
-        video: { url: videoFile }
+        video: { url: gifFile }, 
+        gifPlayback: true 
     }, { quoted: m })
 
     cooldowns[m.sender] = Date.now()
@@ -85,5 +85,3 @@ function xpRange(level, multiplier = 1) {
     let xp = Math.floor((max - min) * multiplier)
     return { min, xp, max }
 }
-
-
