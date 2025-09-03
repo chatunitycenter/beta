@@ -66,5 +66,5 @@ END:VCARD`
 }
 handler.help = ['owner']
 handler.tags = ['main']
-handler.command = ['padroni','owner'] 
+handler.command = ['creatore'] 
 export default handlerp
