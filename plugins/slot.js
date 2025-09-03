@@ -1,136 +1,63 @@
-//import db from '../lib/database.js'
-let cooldowns = {};
+let cooldowns = {}
 
-let reg = 40
 let handler = async (m, { conn, args, usedPrefix, command }) => {
-    let fa = `.`.trim()
     let users = global.db.data.users[m.sender]
     let apuesta = parseInt(args[0])
 
-    // Cooldown di 5 minuti (solo in caso di vincita)
+    if (!apuesta || isNaN(apuesta)) {
+        return conn.reply(m.chat, `❌ Devi specificare una puntata valida.\nEsempio: *${usedPrefix + command} 100*`, m)
+    }
+
+    // Cooldown di 5 minuti (sempre)
     if (cooldowns[m.sender] && Date.now() - cooldowns[m.sender] < 5 * 60 * 1000) {
         let ms = cooldowns[m.sender] + 5 * 60 * 1000 - Date.now();
         let min = Math.floor(ms / 60000);
         let sec = Math.floor((ms % 60000) / 1000);
-        let tempoRimanente = `${min}m ${sec}s`
-
-        await conn.sendMessage(
-          m.chat,
-          {
-            text: `⏳ Devi aspettare ${tempoRimanente} prima di poter rigiocare dopo una vincita!`,
-            footer: 'Torna più tardi o scegli un altro comando:',
-            buttons: [
-              { buttonId: `${usedPrefix}menu`, buttonText: { displayText: "🏠 Menu Principale" }, type: 1 }
-            ],
-            viewOnce: true,
-            headerType: 4
-          },
-          { quoted: m }
-        );
-        return;
+        return conn.reply(m.chat, `⏳ Devi aspettare ${min}m ${sec}s prima di poter rigiocare!`, m)
     }
 
-    let emojis = ["🪙", "🎰", "💎"];
-    // Estrai 3 simboli casuali
-    let estratti = [];
-    for (let i = 0; i < 3; i++) {
-        estratti.push(emojis[Math.floor(Math.random() * emojis.length)]);
-    }
+    // Esito casuale: 50% vinci, 50% perdi
+    let win = Math.random() < 0.5
 
-    // Aumenta la probabilità di vincita: 1 su 4 (25%) per tripla uguale
-    let win = false;
-    if (Math.random() < 0.25) {
-        estratti = [emojis[0], emojis[0], emojis[0]]; // tripla vincente
-        win = true;
-    }
+    let unitycoinsWin = 800
+    let expWin = 100
+    let expLose = apuesta
 
-    // Ricostruisci la matrice per la visualizzazione
-    let x = [estratti[0], estratti[0], estratti[0]];
-    let y = [estratti[1], estratti[1], estratti[1]];
-    let z = [estratti[2], estratti[2], estratti[2]];
+    let infoMsg = ''
 
-    let end;
-    // Ricompense
-    const unitycoinsWin = 500
-    const expWin = 100
-    const expLose = apuesta
-
-    if (win || (estratti[0] === estratti[1] && estratti[1] === estratti[2])) {
-        end = `𝐡𝐚𝐢 𝐯𝐢𝐧𝐭𝐨 🎉 🎁\nComplimenti, hai vinto 500 unitycoins!`
-        users.exp += apuesta + apuesta
-        users.limit = (users.limit || 0) + 500 // aggiungi 500 unitycoins
-        win = true;
-    } else if (estratti[0] === estratti[1] || estratti[0] === estratti[2] || estratti[1] === estratti[2]) {
-        end = `𝐜𝐨𝐧𝐭𝐢𝐧𝐮𝐚 𝐚 𝐭𝐞𝐧𝐭𝐚𝐫𝐞 . . .`
-    } else {
-        end = `𝐡𝐚𝐢 𝐩𝐞𝐫𝐬𝐨 🤡`
-        users.exp -= apuesta
-    }
-
-    // Se ha vinto, imposta il cooldown
     if (win) {
-        cooldowns[m.sender] = Date.now();
-    }
-
-    // Prepara solo il messaggio informativo (senza matrice slot)
-    let infoMsg = '';
-    if (win || (estratti[0] === estratti[1] && estratti[1] === estratti[2])) {
         users.limit = (users.limit || 0) + unitycoinsWin
         users.exp += expWin
-        infoMsg = `🎉 Hai vinto!\nGuadagno: +${unitycoinsWin} unitycoins\n+${expWin} exp`;
-    } else if (estratti[0] === estratti[1] || estratti[0] === estratti[2] || estratti[1] === estratti[2]) {
-        infoMsg = `Continua a tentare...`;
+        infoMsg = `🎉 Hai vinto!\n+${unitycoinsWin} UC\n+${expWin} exp`
     } else {
         users.exp -= expLose
-        infoMsg = `🤡 Hai perso!\nPerdita: -${expLose} exp`;
+        infoMsg = `🤡 Hai perso!\n-${expLose} exp`
     }
 
-    // Invio solo la GIF in base al risultato e il messaggio info separato con delay di 3 secondi
-    if (win) {
-        await conn.sendMessage(
-            m.chat,
-            {
-                video: { url: './icone/vincita.mp4' },
-                gifPlayback: true
-            },
-            { quoted: m }
-        );
-        await new Promise(res => setTimeout(res, 3000));
-        await conn.sendMessage(
-            m.chat,
-            {
-                text: infoMsg
-            },
-            { quoted: m }
-        );
-    } else if (end.includes('𝐡𝐚𝐢 𝐩𝐞𝐫𝐬𝐨')) {
-        await conn.sendMessage(
-            m.chat,
-            {
-                video: { url: './icone/perdita.mp4' },
-                gifPlayback: true
-            },
-            { quoted: m }
-        );
-        await new Promise(res => setTimeout(res, 3000));
-        await conn.sendMessage(
-            m.chat,
-            {
-                text: infoMsg
-            },
-            { quoted: m }
-        );
-    } else {
-        await conn.sendMessage(
-            m.chat,
-            {
-                text: infoMsg
-            },
-            { quoted: m }
-        );
-    }
+    // Imposta cooldown
+    cooldowns[m.sender] = Date.now();
+
+    // Manda sempre lo stesso video (sia vincita che perdita)
+    await conn.sendMessage(
+        m.chat,
+        {
+            video: { url: './icone/slot.mp4' },
+            gifPlayback: true
+        },
+        { quoted: m }
+    )
+
+    // Dopo 3 secondi manda il messaggio del risultato
+    await new Promise(res => setTimeout(res, 3000))
+
+    await conn.sendMessage(
+        m.chat,
+        { text: infoMsg },
+        { quoted: m }
+    )
 }
-handler.help = ['slot <apuesta>']
+
+handler.help = ['slot <puntata>']
 handler.tags = ['game']
 handler.command = ['slot']
 
