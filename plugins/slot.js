@@ -2,10 +2,11 @@ let cooldowns = {}
 
 let handler = async (m, { conn, args, usedPrefix, command }) => {
     let users = global.db.data.users[m.sender]
-    let apuesta = parseInt(args[0])
 
-    if (!apuesta || isNaN(apuesta)) {
-        return conn.reply(m.chat, `❌ Devi specificare una puntata valida.\nEsempio: *${usedPrefix + command} 100*`, m)
+    // Se non scrive nulla, di default 20 UC
+    let apuesta = args[0] ? parseInt(args[0]) : 20
+    if (isNaN(apuesta) || apuesta <= 0) {
+        return conn.reply(m.chat, `❌ Devi inserire un numero valido di UC.\nEsempio: *${usedPrefix + command} 100*`, m)
     }
 
     // Cooldown di 5 minuti (sempre)
