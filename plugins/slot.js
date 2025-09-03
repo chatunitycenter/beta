@@ -27,21 +27,23 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         user.exp = (user.exp || 0) + 100
         resultMsg = `🎉 Hai vinto!\n+800 UC\n+100 exp`
         videoFile = './icone/vincita.mp4'
-        
-        await conn.sendMessage(m.chat, { 
-            video: { url: videoFile }, 
-            gifPlayback: true 
-        }, { quoted: m })
-        
     } else {
         user.limit = (user.limit || 0) - bet
         user.exp = Math.max(0, (user.exp || 0) - bet)
         resultMsg = `🤡 Hai perso!\n-${bet} UC\n-${bet} exp`
+        videoFile = './icone/perdita.mp4'
     }
+
+    // Invia SEMPRE il video
+    await conn.sendMessage(m.chat, { 
+        video: { url: videoFile }, 
+        gifPlayback: true 
+    }, { quoted: m })
 
     cooldowns[m.sender] = Date.now()
     
-    if (win) await new Promise(resolve => setTimeout(resolve, 3000))
+    // Aspetta 3 secondi e manda il risultato
+    await new Promise(resolve => setTimeout(resolve, 3000))
     await conn.reply(m.chat, resultMsg, m)
 }
 
