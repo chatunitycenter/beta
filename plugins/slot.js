@@ -29,19 +29,19 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
     let expWin = 100
     let expLose = apuesta
 
-    let infoMsg = ''
-    let videoFile = ''
+    let infoMsg
+    let videoFile
 
     if (win) {
-        // Premio
+        // Vittoria
         users.limit = (users.limit || 0) + unitycoinsWin
         users.exp += expWin
         infoMsg = `🎉 Hai vinto!\n+${unitycoinsWin} UC\n+${expWin} exp`
         videoFile = './icone/vincita.mp4'
     } else {
-        // Perdita
-        users.limit -= apuesta // leva UC
-        users.exp -= expLose   // leva exp
+        // Sconfitta
+        users.limit -= apuesta
+        users.exp -= expLose
         infoMsg = `🤡 Hai perso!\n-${apuesta} UC\n-${expLose} exp`
         videoFile = './icone/perdita.mp4'
     }
@@ -49,7 +49,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
     // Imposta cooldown
     cooldowns[m.sender] = Date.now();
 
-    // Manda video risultato
+    // Invia il video corretto
     await conn.sendMessage(
         m.chat,
         {
@@ -59,7 +59,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         { quoted: m }
     )
 
-    // Dopo 3 secondi manda il messaggio del risultato
+    // Dopo 3 secondi invia il messaggio del risultato
     await new Promise(res => setTimeout(res, 3000))
 
     await conn.sendMessage(
