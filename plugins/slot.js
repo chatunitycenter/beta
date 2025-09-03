@@ -77,7 +77,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         infoMsg = `🤡 Hai perso!\nPerdita: -${apuesta} exp`;
     }
 
-    // Invio solo la GIF in base al risultato e il messaggio info separato
+    // Invio solo la GIF in base al risultato e il messaggio info separato con delay di 3 secondi
     if (win) {
         await conn.sendMessage(
             m.chat,
@@ -87,6 +87,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
             },
             { quoted: m }
         );
+        await new Promise(res => setTimeout(res, 3000));
         await conn.sendMessage(
             m.chat,
             {
@@ -103,6 +104,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
             },
             { quoted: m }
         );
+        await new Promise(res => setTimeout(res, 3000));
         await conn.sendMessage(
             m.chat,
             {
