@@ -77,17 +77,13 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         
 ${end}`
 
-    // Invio GIF in base al risultato
+    // Invio solo la GIF in base al risultato
     if (win) {
         await conn.sendMessage(
             m.chat,
             {
                 video: { url: './icone/vincita.gif' },
-                gifPlayback: true,
-                caption: risultatoSlot,
-                footer: 'Vuoi giocare ancora?',
-                viewOnce: true,
-                headerType: 4
+                gifPlayback: true
             },
             { quoted: m }
         );
@@ -96,11 +92,7 @@ ${end}`
             m.chat,
             {
                 video: { url: './icone/perdita.gif' },
-                gifPlayback: true,
-                caption: risultatoSlot,
-                footer: 'Vuoi giocare ancora?',
-                viewOnce: true,
-                headerType: 4
+                gifPlayback: true
             },
             { quoted: m }
         );
@@ -108,10 +100,7 @@ ${end}`
         await conn.sendMessage(
             m.chat,
             {
-                text: risultatoSlot,
-                footer: 'Vuoi giocare ancora?',
-                viewOnce: true,
-                headerType: 4
+                text: risultatoSlot
             },
             { quoted: m }
         );
