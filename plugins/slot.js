@@ -53,10 +53,9 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
     resultMsg += '┌──────────────\n'
     resultMsg += '│ 👛 *UC: ' + (user.limit || 0) + '*\n'
     resultMsg += '│ ⭐ *XP: ' + (user.exp || 0) + '*\n'
-    resultMsg += '│ 🎯 *Livello: ' + user.level + '*\n'
     resultMsg += '│ 📊 *Progresso: ' + currentLevelXP + '/' + levelXP + ' XP*\n'
     resultMsg += '└──────────────\n'
-    resultMsg += '\nℹ️ Usa ' + usedPrefix + 'miniera per guadagnare più XP!'
+    resultMsg += '\nℹ️ Usa ' + usedPrefix + 'menuxp per guadagnare più XP!'
 
     // Invia la GIF invece del video
     await conn.sendMessage(m.chat, { 
@@ -85,3 +84,4 @@ function xpRange(level, multiplier = 1) {
     let xp = Math.floor((max - min) * multiplier)
     return { min, xp, max }
 }
+
