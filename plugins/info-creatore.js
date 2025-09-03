@@ -1,25 +1,64 @@
+import pkg from 'baileys'
+const { generateWAMessageFromContent } = pkg
+
 let handler = async (m, { conn }) => {
-    const createVCard = (name, number, role) => {
-        return `BEGIN:VCARD
+  // vCard unico contatto
+  let vcard1 = `BEGIN:VCARD
 VERSION:3.0
-FN:${name}
-ORG:ChatUnity;
-TEL;type=CELL;type=VOICE;waid=${number}:+${number}
-X-ABLabel:${role}
-END:VCARD`.replace(/\n/g, '\r\n');
-    };
+FN: vale
+ORG: valep
+TEL;type=CELL;type=VOICE;waid=393518419909:+39 351 553 3859
+END:VCARD`
 
-    await conn.sendMessage(m.chat, { 
-        contacts: { 
-            displayName: 'Creatore', 
-            contacts: [
-                { vcard: createVCard('Creatore', '393515533859', 'Founder') }
+  // primo invio -> contatto
+  await conn.sendMessage(m.chat, {
+    contacts: {
+      displayName: "Owner",
+      contacts: [
+        { vcard: vcard1 }
+      ]
+    }
+  }, { quoted: m })
+
+  // secondo invio -> messaggio CTA URL con un bottone
+  let msg = generateWAMessageFromContent(m.chat, {
+    viewOnceMessage: {
+      message: {
+        messageContextInfo: {
+          deviceListMetadata: {},
+          deviceListMetadataVersion: 2
+        },
+        interactiveMessage: {
+          header: { 
+            title: "I miei social" 
+          },
+          body: { 
+            text: "Puoi contattarmi anche qua: 👇" 
+          },
+          footer: { 
+            text: "MyBot" 
+          },
+          nativeFlowMessage: {
+            buttons: [
+              {
+                name: "cta_url",
+                buttonParamsJson: JSON.stringify({
+                  display_text: "『 📸 』 Instagram",
+                  url: "https://instagram.com/yyktv.vale",
+                  merchant_url: "https://instagram.com/yyktv.vale"
+                })
+              }
             ]
+          }
         }
-    }, { quoted: m });
-};
+      }
+    }
+  }, { userJid: m.sender })
 
-handler.help = ['creatore'];
-handler.tags = ['info'];
-handler.command = ['creatore', 'proprietario', ]; // ✅ Qui la correzione
-export default handler;
+  await conn.relayMessage(m.chat, msg.message, { messageId: msg.key.id })
+}
+
+handler.help = ['owner']
+handler.tags = ['main']
+handler.command = ['creatore'] 
+export default handler
