@@ -3,10 +3,10 @@ let cooldowns = {}
 let handler = async (m, { conn, args, usedPrefix, command }) => {
     let users = global.db.data.users[m.sender]
 
-    // Se non scrive nulla, di default 20 UC
+    // Puntata di default = 20
     let apuesta = args[0] ? parseInt(args[0]) : 20
     if (isNaN(apuesta) || apuesta <= 0) {
-        return conn.reply(m.chat, `❌ Devi inserire un numero valido di UC.\nEsempio: *${usedPrefix + command} 100*`, m)
+        return conn.reply(m.chat, `❌ Devi inserire una puntata valida.\nEsempio: *${usedPrefix + command} 100*`, m)
     }
 
     // Cooldown di 5 minuti (sempre)
@@ -38,11 +38,13 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
     // Imposta cooldown
     cooldowns[m.sender] = Date.now();
 
-    // Manda sempre lo stesso video (sia vincita che perdita)
+    // Video diverso in base all’esito
+    let videoFile = win ? './icone/vincita.mp4' : './icone/perdita.mp4'
+
     await conn.sendMessage(
         m.chat,
         {
-            video: { url: './icone/slot.mp4' },
+            video: { url: videoFile },
             gifPlayback: true
         },
         { quoted: m }
