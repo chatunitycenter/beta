@@ -16,7 +16,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         let timeLeft = cooldowns[m.sender] + 300000 - Date.now()
         let min = Math.floor(timeLeft / 60000)
         let sec = Math.floor((timeLeft % 60000) / 1000)
-        return conn.reply(m.chat, '⏳ Aspetta ' + min + 'm ' + sec + 's prima di giocare again.', m)
+        return conn.reply(m.chat, '⏳ Aspetta ' + min + 'm ' + sec + 's prima di giocare di nuovo.', m)
     }
 
     let win = Math.random() < 0.5
@@ -84,4 +84,5 @@ function xpRange(level, multiplier = 1) {
     let xp = Math.floor((max - min) * multiplier)
     return { min, xp, max }
 }
+
 
