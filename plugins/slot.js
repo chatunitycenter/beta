@@ -9,6 +9,11 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         return conn.reply(m.chat, `❌ Devi inserire una puntata valida.\nEsempio: *${usedPrefix + command} 100*`, m)
     }
 
+    // Controllo saldo minimo UC
+    if ((users.limit || 0) < apuesta) {
+        return conn.reply(m.chat, `🚫 Non hai abbastanza UC per giocare!\nTi servono almeno ${apuesta} UC.`, m)
+    }
+
     // Cooldown di 5 minuti (sempre)
     if (cooldowns[m.sender] && Date.now() - cooldowns[m.sender] < 5 * 60 * 1000) {
         let ms = cooldowns[m.sender] + 5 * 60 * 1000 - Date.now();
@@ -25,22 +30,26 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
     let expLose = apuesta
 
     let infoMsg = ''
+    let videoFile = ''
 
     if (win) {
+        // Premio
         users.limit = (users.limit || 0) + unitycoinsWin
         users.exp += expWin
         infoMsg = `🎉 Hai vinto!\n+${unitycoinsWin} UC\n+${expWin} exp`
+        videoFile = './icone/vincita.mp4'
     } else {
-        users.exp -= expLose
-        infoMsg = `🤡 Hai perso!\n-${expLose} exp`
+        // Perdita
+        users.limit -= apuesta // leva UC
+        users.exp -= expLose   // leva exp
+        infoMsg = `🤡 Hai perso!\n-${apuesta} UC\n-${expLose} exp`
+        videoFile = './icone/perdita.mp4'
     }
 
     // Imposta cooldown
     cooldowns[m.sender] = Date.now();
 
-    // Video diverso in base all’esito
-    let videoFile = win ? './icone/vincita.mp4' : './icone/perdita.mp4'
-
+    // Manda video risultato
     await conn.sendMessage(
         m.chat,
         {
