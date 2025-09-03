@@ -22,17 +22,42 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
     let win = Math.random() < 0.5
     let resultMsg, videoFile
 
+    // Calcola informazioni livello e XP
+    user.exp = Number(user.exp) || 0
+    user.level = Number(user.level) || 1
+    let { min: minXP, xp: levelXP, max: maxXP } = xpRange(user.level, global.multiplier || 1)
+    let currentLevelXP = user.exp - minXP
+    let xpNeeded = Math.max(0, maxXP - user.exp)
+
     if (win) {
         user.limit = (user.limit || 0) + 800
         user.exp = (user.exp || 0) + 100
-        resultMsg = '🎉 Hai vinto!\n+800 UC\n+100 exp'
-        videoFile = './icone/perdita.mp4'  // Ho invertito i video per coerenza
+        resultMsg = '🎉 *Hai vinto!*\n'
+        resultMsg += '┌──────────────\n'
+        resultMsg += '│ ➕ *800 UC*\n'
+        resultMsg += '│ ➕ *100 XP*\n'
+        resultMsg += '└──────────────\n'
+        videoFile = './icone/vincita.mp4'
     } else {
         user.limit = (user.limit || 0) - bet
         user.exp = Math.max(0, (user.exp || 0) - bet)
-        resultMsg = '🤡 Hai perso!\n-' + bet + ' UC\n-' + bet + ' exp'
-        videoFile = './icone/vincita.mp4'  // Ho invertito i video per coerenza
+        resultMsg = '🤡 *Hai perso!*\n'
+        resultMsg += '┌──────────────\n'
+        resultMsg += '│ ➖ *' + bet + ' UC*\n'
+        resultMsg += '│ ➖ *' + bet + ' XP*\n'
+        resultMsg += '└──────────────\n'
+        videoFile = './icone/perdita.mp4'
     }
+
+    // Aggiungi informazioni saldo attuale
+    resultMsg += '\n💎 *SALDO ATTUALE*\n'
+    resultMsg += '┌──────────────\n'
+    resultMsg += '│ 👛 *UC: ' + (user.limit || 0) + '*\n'
+    resultMsg += '│ ⭐ *XP: ' + (user.exp || 0) + '*\n'
+    resultMsg += '│ 🎯 *Livello: ' + user.level + '*\n'
+    resultMsg += '│ 📊 *Progresso: ' + currentLevelXP + '/' + levelXP + ' XP*\n'
+    resultMsg += '└──────────────\n'
+    resultMsg += '\nℹ️ Usa ' + usedPrefix + 'miniera per guadagnare più XP!'
 
     // Invia il video
     await conn.sendMessage(m.chat, { 
@@ -51,4 +76,14 @@ handler.tags = ['game']
 handler.command = ['slot']
 
 export default handler
+
+// Funzione xpRange dal tuo codice di esempio
+function xpRange(level, multiplier = 1) {
+    if(level < 0) level = 0
+    let min = level === 0 ? 0 : Math.pow(level, 2) * 20
+    let max = Math.pow(level + 1, 2) * 20
+    let xp = Math.floor((max - min) * multiplier)
+    return { min, xp, max }
+}
+
 
