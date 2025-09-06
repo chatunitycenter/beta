@@ -8,22 +8,25 @@ import {
 import qrcode from 'qrcode'
 import fs from 'fs'
 import pino from 'pino'
+import crypto from 'crypto'
 import NodeCache from 'node-cache'
 import * as ws from 'ws'
-import crypto from 'crypto'
 import { makeWASocket } from '../lib/simple.js'
 import { Boom } from '@hapi/boom'
 
 if (!(global.conns instanceof Array)) global.conns = []
 
-// ===== FUNZIONE BASE PER CREARE SUBBOT =====
-async function startSubBot(m, conn, mode = "qr") {
-  const authFolder = m.sender.split('@')[0]
-  const userFolderPath = `./sessioni/${authFolder}`
+// FUNZIONE BASE AVVIO SUBBOT
+async function startSubBot(m, conn, mode = "qr", args = []) {
+  let folder = m.sender.split('@')[0]
+  let folderPath = `./sessioni/${folder}`
+  if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath, { recursive: true })
 
-  if (!fs.existsSync(userFolderPath)) fs.mkdirSync(userFolderPath, { recursive: true })
+  if (args[0]) {
+    fs.writeFileSync(`${folderPath}/creds.json`, Buffer.from(args[0], 'base64').toString('utf-8'))
+  }
 
-  const { state, saveCreds } = await useMultiFileAuthState(userFolderPath)
+  const { state, saveCreds } = await useMultiFileAuthState(folderPath)
   const { version } = await fetchLatestBaileysVersion()
   const msgRetryCounterCache = new NodeCache()
 
@@ -46,7 +49,7 @@ async function startSubBot(m, conn, mode = "qr") {
     const code = lastDisconnect?.error?.output?.statusCode || new Boom(lastDisconnect?.error)?.output?.statusCode
 
     if (qr && mode === "qr") {
-      let txt = `*📌 Scansiona questo QR per collegare il SubBot*\n\n1. Apri WhatsApp\n2. Vai su "Dispositivi collegati"\n3. Scansiona questo QR`
+      let txt = `*📌 SubBot collegamento via QR*\n\n1. Apri WhatsApp\n2. Vai su "Dispositivi collegati"\n3. Scansiona questo QR`
       let qrCode = await qrcode.toDataURL(qr, { scale: 8 })
       let msg = await conn.sendFile(m.chat, qrCode, 'qrcode.png', txt, m)
       setTimeout(() => conn.sendMessage(m.chat, { delete: msg.key }), 30000)
@@ -67,27 +70,27 @@ async function startSubBot(m, conn, mode = "qr") {
 
     if (connection === 'close') {
       if (code !== DisconnectReason.loggedOut) {
-        setTimeout(() => startSubBot(m, conn, mode), 5000)
+        setTimeout(() => startSubBot(m, conn, mode, args), 5000)
       } else {
         await conn.sendMessage(m.chat, { text: `❌ Sub-bot disconnesso.`, mentions: [m.sender] }, { quoted: m })
-        try { fs.rmSync(userFolderPath, { recursive: true, force: true }) } catch {}
+        try { fs.rmSync(folderPath, { recursive: true, force: true }) } catch {}
       }
     }
   })
 }
 
 // ===== SERBOT (QR) =====
-let handler = async (m, { conn }) => {
-  startSubBot(m, conn, "qr")
+let handler = async (m, { conn, args }) => {
+  startSubBot(m, conn, "qr", args)
 }
-handler.command = ['serbot', 'jadibot']
+handler.command = ['serbot', 'jadibot', 'qr']
 export default handler
 
 // ===== SERBOT (CODE) =====
 export const pairingCode = {
   command: ['code'],
-  handler: async (m, { conn }) => {
-    startSubBot(m, conn, "code")
+  handler: async (m, { conn, args }) => {
+    startSubBot(m, conn, "code", args)
   }
 }
 
@@ -121,12 +124,12 @@ export const listBots = {
 
 // ===== DELETE SESSION =====
 export const delSerbot = {
-  command: ['delserbot', 'logout'],
+  command: ['delserbot', 'logout', 'deletesession', 'delsession'],
   handler: async (m, { conn }) => {
-    let authFolder = m.sender.split('@')[0]
-    let userFolderPath = `./sessioni/${authFolder}`
-    if (fs.existsSync(userFolderPath)) {
-      fs.rmSync(userFolderPath, { recursive: true, force: true })
+    let folder = m.sender.split('@')[0]
+    let folderPath = `./sessioni/${folder}`
+    if (fs.existsSync(folderPath)) {
+      fs.rmSync(folderPath, { recursive: true, force: true })
       await conn.reply(m.chat, `🗑️ Sessione Subbot eliminata con successo.`, m)
     } else {
       await conn.reply(m.chat, `⚠️ Nessuna sessione trovata.`, m)
