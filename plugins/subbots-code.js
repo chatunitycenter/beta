@@ -54,11 +54,11 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
       if (isNewLogin) conn.isInit = true
 
       if (qr) {
-        let txt = '*S U B B O T*\n\n> Scansiona questo QR per collegarti come Sub-Bot\n\n1️⃣ Apri WhatsApp\n2️⃣ Vai su *Dispositivi Collegati*\n3️⃣ Scansiona il QR\n\n⚠️ Valido solo per 30 secondi'
+        let txt = '*S U B B O T*\n\n> Scansiona questo QR per collegarti come Sub-Bot\n\n1️⃣ Apri WhatsApp\n2️⃣ Vai su *Dispositivi Collegati*\n3️⃣ Scansiona il QR\n\n⚠️ Valido per 120 secondi'
         let sendQR = await parentw.sendFile(m.chat, await qrcode.toDataURL(qr, { scale: 8 }), "qrcode.png", txt, m)
         setTimeout(() => {
           parentw.sendMessage(m.chat, { delete: sendQR.key })
-        }, 30000)
+        }, 120000) // 120 secondi
       }
 
       const code = lastDisconnect?.error?.output?.statusCode || lastDisconnect?.error?.output?.payload?.statusCode
