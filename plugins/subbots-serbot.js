@@ -1,7 +1,81 @@
-import { join } from 'path' import { existsSync, mkdirSync } from 'fs' import { pathToFileURL } from 'url' import qrcode from 'qrcode' import pino from 'pino' import { makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion, makeCacheableSignalKeyStore } from '@whiskeysockets/baileys'
+import { join } from 'path'
+import { useMultiFileAuthState, makeWASocket, fetchLatestBaileysVersion, makeCacheableSignalKeyStore, DisconnectReason } from '@whiskeysockets/baileys'
+import pino from 'pino'
+
 const activeBots = new Map()
-async function loadPluginsForBot(bot) { const pluginsDir = join(process.cwd(), 'plugins') if (!existsSync(pluginsDir)) return bot.plugins = bot.plugins || {} bot._pluginListeners = bot._pluginListeners || {} const files = require('fs').readdirSync(pluginsDir).filter(f => f.endsWith('.js') || f.endsWith('.mjs')) for (const file of files) { try { const filePath = join(pluginsDir, file) const mod = await import(pathToFileURL(filePath).href) const plug = (mod && mod.default) ? mod.default : mod if (!plug) continue bot.plugins[file] = plug const listeners = [] if (typeof plug.handler === 'function') { const listener = async (chatUpdate) => { try { await plug.handler.call(bot, chatUpdate) } catch (e) { console.error('Plugin handler error', file, e) } } bot.ev.on('messages.upsert', listener) listeners.push(['messages.upsert', listener]) } if (typeof plug.before === 'function') { const listener = async (chatUpdate) => { try { await plug.before.call(bot, chatUpdate) } catch (e) { console.error('Plugin before error', file, e) } } bot.ev.on('messages.upsert', listener) listeners.push(['messages.upsert', listener]) } if (typeof plug.all === 'function') { const listener = async (chatUpdate) => { try { await plug.all.call(bot, chatUpdate) } catch (e) { console.error('Plugin all error', file, e) } } bot.ev.on('messages.upsert', listener) listeners.push(['messages.upsert', listener]) } if (typeof plug.participantsUpdate === 'function') { const listener = async (update) => { try { await plug.participantsUpdate.call(bot, update) } catch (e) { console.error('Plugin participants error', file, e) } } bot.ev.on('group-participants.update', listener) listeners.push(['group-participants.update', listener]) } if (typeof plug.groupsUpdate === 'function') { const listener = async (update) => { try { await plug.groupsUpdate.call(bot, update) } catch (e) { console.error('Plugin groups error', file, e) } } bot.ev.on('groups.update', listener) listeners.push(['groups.update', listener]) } if (typeof plug.deleteUpdate === 'function') { const listener = async (update) => { try { await plug.deleteUpdate.call(bot, update) } catch (e) { console.error('Plugin delete error', file, e) } } bot.ev.on('message.delete', listener) listeners.push(['message.delete', listener]) } if (typeof plug.callUpdate === 'function') { const listener = async (update) => { try { await plug.callUpdate.call(bot, update) } catch (e) { console.error('Plugin call error', file, e) } } bot.ev.on('call', listener) listeners.push(['call', listener]) } if (typeof plug.credsUpdate === 'function') { const listener = async (creds) => { try { await plug.credsUpdate.call(bot, creds) } catch (e) { console.error('Plugin creds error', file, e) } } bot.ev.on('creds.update', listener) listeners.push(['creds.update', listener]) } bot._pluginListeners[file] = listeners } catch (e) { console.error('Errore caricamento plugin', file, e) } } }
-function detachPlugins(bot) { if (!bot || !bot._pluginListeners) return for (const [file, listeners] of Object.entries(bot._pluginListeners)) { for (const [event, listener] of listeners) { try { if (typeof bot.ev.removeListener === 'function') bot.ev.removeListener(event, listener) else if (typeof bot.ev.off === 'function') bot.ev.off(event, listener) } catch (e) { console.error('Errore rimozione listener', file, event, e) } } } bot._pluginListeners = {} bot.plugins = {} }
-const handler = async (m, { conn, args }) => { try { const param = (args && args[0]) ? args[0].replace(/\D/g, '') : null if (!param) return conn.sendMessage(m.chat, { text: '❌ Usa: .conectar ' }, { quoted: m }) const number = param const sessionPath = join(process.cwd(), 'sessioni', number) if (!existsSync(join(process.cwd(), 'sessioni'))) mkdirSync(join(process.cwd(), 'sessioni'), { recursive: true }) if (!existsSync(sessionPath)) mkdirSync(sessionPath, { recursive: true }) const { state, saveCreds } = await useMultiFileAuthState(sessionPath) const { version } = await fetchLatestBaileysVersion() const sock = makeWASocket({ version, logger: pino({ level: 'silent' }), printQRInTerminal: false, auth: { creds: state.creds, keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' })) }, browser: ['SubBot', 'Chrome', '1.0.0'], markOnlineOnConnect: true }) sock.ev.on('creds.update', saveCreds) let sentPairOrQr = false if (typeof sock.requestPairingCode === 'function') { try { const code = await sock.requestPairingCode(number) sentPairOrQr = true await conn.sendMessage(m.chat, { text: 🔑 Codice pairing per ${number}:\n\n${code}\n\nApri WhatsApp -> Dispositivi collegati -> Collega dispositivo -> Inserisci il codice }, { quoted: m }) } catch (e) { // fallback to QR } } sock.ev.on('connection.update', async (update) => { const { connection, lastDisconnect, qr, pairingCode } = update if (!sentPairOrQr && pairingCode) { sentPairOrQr = true try { await conn.sendMessage(m.chat, { text: 🔑 Codice pairing per ${number}:\n\n${pairingCode}\n\nApri WhatsApp -> Dispositivi collegati -> Collega dispositivo -> Inseriscilo }, { quoted: m }) } catch (e) {} } if (!sentPairOrQr && qr) { sentPairOrQr = true try { const qrImage = await qrcode.toDataURL(qr, { scale: 8 }) await conn.sendMessage(m.chat, { image: Buffer.from(qrImage.split(',')[1], 'base64'), caption: 📲 Scansiona QR con WhatsApp per collegare il numero ${number} }, { quoted: m }) } catch (e) { console.error('Errore invio QR', e) } } if (connection === 'open') { activeBots.set(number, sock) try { await loadPluginsForBot(sock) } catch (e) { console.error('Errore loadPluginsForBot', e) } await conn.sendMessage(m.chat, { text: ✅ Subbot connesso per ${number} }, { quoted: m }) } if (connection === 'close') { const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== 401 && lastDisconnect?.error?.output?.statusCode !== 403 && lastDisconnect?.error?.output?.statusCode !== undefined if (!shouldReconnect) { detachPlugins(sock) activeBots.delete(number) try { await conn.sendMessage(m.chat, { text: ❌ Subbot disconnesso per ${number} }, { quoted: m }) } catch (e) {} } } }) sock.ev.on('creds.update', saveCreds) sock.ev.on('messages.upsert', async (mup) => { if (mup && Array.isArray(mup.messages)) { for (const pluginName of Object.keys(sock.plugins || {})) { const plug = sock.plugins[pluginName] if (!plug) continue try { if (typeof plug.before === 'function') await plug.before.call(sock, mup) if (typeof plug.handler === 'function') await plug.handler.call(sock, mup) if (typeof plug.all === 'function') await plug.all.call(sock, mup) } catch (e) { console.error('Errore plugin processing on messages.upsert', pluginName, e) } } } }) } catch (e) { console.error('Errore crear subbot', e) try { await conn.sendMessage(m.chat, { text: ❌ Errore: ${e.message} }, { quoted: m }) } catch (err) {} } }
-handler.command = ['conectar', 'serbot', 'subbot'] handler.help = ['conectar '] handler.tags = ['tools']
+
+let handler = async (m, { conn, args, command }) => {
+  if (command === 'conectar') {
+    if (!args[0]) return m.reply('📱 Inserisci il numero a cui collegare il subbot.\nEsempio: `.conectar 393471234567`')
+    const number = args[0].replace(/[^0-9]/g, '')
+
+    try {
+      const sessionPath = join(process.cwd(), 'sessioni', number)
+      const { state, saveCreds } = await useMultiFileAuthState(sessionPath)
+      const { version } = await fetchLatestBaileysVersion()
+
+      const bot = makeWASocket({
+        logger: pino({ level: 'silent' }),
+        printQRInTerminal: true,
+        auth: {
+          creds: state.creds,
+          keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' }))
+        },
+        version
+      })
+
+      bot.ev.on('creds.update', saveCreds)
+
+      bot.ev.on('connection.update', async (update) => {
+        const { connection, lastDisconnect } = update
+
+        if (connection === 'open') {
+          activeBots.set(number, bot)
+          if (!global.conns) global.conns = []
+          global.conns.push(bot)
+          await conn.sendMessage(m.chat, { text: `✅ Subbot connesso su *${number}*` }, { quoted: m })
+        }
+
+        if (connection === 'close') {
+          const reason = lastDisconnect?.error?.output?.statusCode
+          if (reason !== DisconnectReason.loggedOut) {
+            setTimeout(() => handler(m, { conn, args: [number], command: 'conectar' }), 5000)
+          } else {
+            activeBots.delete(number)
+            if (global.conns) {
+              const i = global.conns.indexOf(bot)
+              if (i !== -1) global.conns.splice(i, 1)
+            }
+            await conn.sendMessage(m.chat, { text: `❌ Subbot *${number}* disconnesso` }, { quoted: m })
+          }
+        }
+      })
+    } catch (e) {
+      console.error(e)
+      await conn.sendMessage(m.chat, { text: `⚠️ Errore: ${e.message}` }, { quoted: m })
+    }
+  }
+
+  if (command === 'stopbot') {
+    if (!args[0]) return m.reply('📴 Inserisci il numero del subbot da fermare.\nEsempio: `.stopbot 393471234567`')
+    const number = args[0].replace(/[^0-9]/g, '')
+
+    if (activeBots.has(number)) {
+      const bot = activeBots.get(number)
+      try {
+        await bot.logout()
+      } catch {}
+      activeBots.delete(number)
+      if (global.conns) {
+        const i = global.conns.indexOf(bot)
+        if (i !== -1) global.conns.splice(i, 1)
+      }
+      await conn.sendMessage(m.chat, { text: `✅ Subbot *${number}* disconnesso` }, { quoted: m })
+    } else {
+      await conn.sendMessage(m.chat, { text: `❌ Nessun subbot trovato per *${number}*` }, { quoted: m })
+    }
+  }
+}
+
+handler.command = /^(conectar|stopbot)$/i
 export default handler
